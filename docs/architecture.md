@@ -6,7 +6,7 @@ Adversal Agents is a project-local orchestration pattern for red-teaming AI agen
 user's active agent/profile
         |
         v
-project root with AGENTS.md + instructions.md
+project root with AGENTS.md / CLAUDE.md / .hermes.md
         |
         v
 .adversal control plane
