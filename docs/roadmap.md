@@ -15,7 +15,7 @@
 - [x] Add Hermes coordinator `SOUL.md` template.
 - [x] Add versioning, changelog, contribution, security, and release-process docs.
 - [x] Add repository validation script and GitHub Actions workflow.
-- [ ] Add branch protection once the first validation workflow has run successfully.
+- [x] Add branch protection once the first validation workflow has run successfully.
 
 ## Phase 2 — Worker adapters
 
