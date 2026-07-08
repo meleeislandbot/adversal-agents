@@ -65,7 +65,7 @@ maintenance_policy:
   changelog: CHANGELOG.md
   commits: conventional_commits
   required_validation: make validate
-  prompt_policy: exactly_one_prompt_at_prompts_setup_md
+  prompt_policy: one_shot_setup_prompt_embedded_in_readme
   context_entrypoints:
     hermes: .hermes.md
     claude_code: CLAUDE.md

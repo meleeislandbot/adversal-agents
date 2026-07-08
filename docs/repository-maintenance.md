@@ -27,7 +27,7 @@ make validate
 
 Validation checks:
 
-- exactly one setup prompt exists;
+- exactly one setup prompt exists visibly in `README.md`;
 - required context files exist;
 - Python helper scripts parse and execute basic diagnostics;
 - project manifest parses as YAML when PyYAML is available;
@@ -41,7 +41,7 @@ Validation checks:
 - `.hermes.md`: Hermes project context.
 - `profiles/hermes-redteam-coordinator/SOUL.md`: optional profile identity for the dedicated coordinator.
 
-Keep context files concise and route agents to `instructions.md`, `.adversal/project.yaml`, and `llm-wiki/index.md`.
+Keep context files concise and route normal agents to `.adversal/project.yaml` and `llm-wiki/index.md`. `instructions.md` is only for one-shot onboarding triggered by the README prompt.
 
 ## Wiki policy
 

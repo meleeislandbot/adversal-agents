@@ -3,7 +3,7 @@
 ## Phase 1 — Bootstrap scaffold
 
 - [x] Agent-facing guided setup instructions.
-- [x] Single human copy/paste prompt at `prompts/setup.md`.
+- [x] Single human copy/paste prompt embedded visibly in `README.md`.
 - [x] Project-local `.adversal/` control plane.
 - [x] Initial safe scenario registry.
 - [x] Read-only environment diagnostic helper.

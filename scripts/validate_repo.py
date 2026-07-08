@@ -20,7 +20,6 @@ REQUIRED_FILES = [
     "CONTRIBUTING.md",
     "SECURITY.md",
     "instructions.md",
-    "prompts/setup.md",
     "AGENTS.md",
     "CLAUDE.md",
     ".hermes.md",
@@ -30,8 +29,10 @@ REQUIRED_FILES = [
     "scripts/create_run_skeleton.py",
 ]
 
+PROMPT_START = "<!-- adversal-setup-prompt:start -->"
+PROMPT_END = "<!-- adversal-setup-prompt:end -->"
 SECRET_PATTERN = re.compile(
-    r"(?i)(api[_-]?key|secret|token|password|passwd)\s*=\s*['\"]([^'\"]{8,})['\"]"
+    r'''(?i)(api[_-]?key|secret|token|password|passwd)\s*=\s*['"]([^'"]{8,})['"]'''
 )
 EXAMPLE_SECRET_VALUES = ("redacted", "your-", "example", "placeholder", "changeme", "<", "...", "xxxx")
 
@@ -47,11 +48,24 @@ def check_required_files() -> None:
         fail(f"missing required files: {missing}")
 
 
-def check_single_prompt() -> None:
-    prompts = sorted((ROOT / "prompts").glob("*.md"))
-    names = [p.name for p in prompts]
-    if names != ["setup.md"]:
-        fail(f"expected exactly one prompt file prompts/setup.md; found {names}")
+def check_setup_prompt() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    if readme.count(PROMPT_START) != 1 or readme.count(PROMPT_END) != 1:
+        fail("README.md must contain exactly one marked setup prompt")
+    if readme.index(PROMPT_START) > readme.index(PROMPT_END):
+        fail("README.md setup prompt markers are reversed")
+    prompt_files = sorted(p.name for p in (ROOT / "prompts").glob("*.md")) if (ROOT / "prompts").exists() else []
+    if prompt_files:
+        fail(f"setup prompt must not be hidden in prompts/*.md; found {prompt_files}")
+
+
+def check_context_files_do_not_trigger_onboarding() -> None:
+    forbidden = ("instructions.md", "one-shot onboarding", "guided setup")
+    for rel in ("AGENTS.md", "CLAUDE.md", ".hermes.md"):
+        text = (ROOT / rel).read_text(encoding="utf-8").lower()
+        hits = [term for term in forbidden if term in text]
+        if hits:
+            fail(f"{rel} must stay day-to-day only; found onboarding terms: {hits}")
 
 
 def check_python_syntax() -> None:
@@ -124,7 +138,8 @@ def check_no_obvious_secrets() -> None:
 
 def main() -> int:
     check_required_files()
-    check_single_prompt()
+    check_setup_prompt()
+    check_context_files_do_not_trigger_onboarding()
     check_python_syntax()
     check_doctor_runs()
     check_yaml_if_available()

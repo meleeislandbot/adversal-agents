@@ -47,9 +47,9 @@ Do not commit:
 
 ## Documentation policy
 
-- `instructions.md` is for agents and must stay operational.
-- `prompts/setup.md` is the only user copy/paste setup prompt.
-- `AGENTS.md`, `CLAUDE.md`, and `.hermes.md` are short context entrypoints.
+- `instructions.md` is for one-shot onboarding and must stay operational.
+- The single user copy/paste onboarding prompt lives visibly in `README.md`.
+- `AGENTS.md`, `CLAUDE.md`, and `.hermes.md` are day-to-day context entrypoints and should not trigger onboarding.
 - Durable research and design context belongs in `llm-wiki/` or `docs/`.
 
 ## Safety policy
