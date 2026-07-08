@@ -1,0 +1,1 @@
+A multi-agent Hermes system leveraging an LLM council for peer-review and debate. The models cross-evaluate reasoning to establish whether a generated solution is valid and complete, or requires revision.

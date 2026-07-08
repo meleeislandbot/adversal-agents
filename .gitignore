@@ -1,0 +1,32 @@
+# macOS / editor noise
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Runtime artifacts: keep templates and ledgers, ignore generated runs/tmp
+.adversal/runs/*
+!.adversal/runs/.gitkeep
+.adversal/tmp/*
+!.adversal/tmp/.gitkeep
+.adversal/artifacts/*
+!.adversal/artifacts/.gitkeep
+
+# Secrets / local credentials
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.pfx
+secrets.*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node
+node_modules/

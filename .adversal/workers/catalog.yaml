@@ -1,0 +1,31 @@
+workers:
+  claude-code:
+    command: claude
+    type: subscription-native-cli
+    setup_check: claude --version
+    hazards: [ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN]
+  codex-cli:
+    command: codex
+    type: subscription-native-cli-or-configured-auth
+    setup_check: codex --version
+    hazards: [OPENAI_API_KEY, CODEX_API_KEY]
+  gemini-cli:
+    command: gemini
+    type: cli-auth-route-must-be-verified
+    setup_check: gemini --version
+    hazards: [GOOGLE_API_KEY, GEMINI_API_KEY, GOOGLE_APPLICATION_CREDENTIALS]
+  opencode:
+    command: opencode
+    type: provider-routed-cli
+    setup_check: opencode --version
+    hazards: []
+  ollama:
+    command: ollama
+    type: local-model-runtime
+    setup_check: ollama --version
+    hazards: []
+  deterministic:
+    command: python3
+    type: local-checker
+    setup_check: python3 --version
+    hazards: []

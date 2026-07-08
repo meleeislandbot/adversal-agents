@@ -1,0 +1,8 @@
+{
+  "timestamp": "<ISO-8601>",
+  "event": "worker_check | run_start | run_end | approval | warning",
+  "worker": "<worker>",
+  "auth_route": "subscription | local | api-key | unknown | not-applicable",
+  "cost_risk": "low | medium | high | unknown",
+  "notes": ""
+}

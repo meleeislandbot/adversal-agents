@@ -1,0 +1,61 @@
+schema_version: 0.1
+project: adversal-agents
+purpose: Portable, guided setup and execution for AI-agent red teaming.
+
+coordinator:
+  profile_agnostic: true
+  rule: "The active user agent in this project root is the coordinator."
+
+paths:
+  wiki: llm-wiki
+  runs: .adversal/runs
+  ledgers: .adversal/ledgers
+  workers: .adversal/workers
+  scenarios: .adversal/scenarios
+  artifacts: .adversal/artifacts
+
+setup_policy:
+  mode: guided_incremental
+  read_only_first: true
+  auto_fix_safe_project_local_gaps: true
+  ask_before:
+    - provider_selection
+    - login_or_device_code
+    - credentials_or_secrets
+    - metered_api_usage
+    - sudo_or_elevated_permissions
+    - global_config_changes
+    - destructive_actions
+    - background_services
+    - external_side_effects
+
+cost_policy:
+  preferred_order:
+    - deterministic
+    - local_tools
+    - local_models
+    - subscription_native_cli
+    - metered_api_explicit_approval_only
+  record_budget_ledger: true
+
+worker_backends:
+  claude_code:
+    command: claude
+    default_route: subscription_native_cli
+    api_key_hazards: [ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN]
+  codex_cli:
+    command: codex
+    default_route: subscription_native_cli_or_configured_auth
+    api_key_hazards: [OPENAI_API_KEY, CODEX_API_KEY]
+  gemini_cli:
+    command: gemini
+    default_route: verify_before_assuming
+    api_key_hazards: [GOOGLE_API_KEY, GEMINI_API_KEY, GOOGLE_APPLICATION_CREDENTIALS]
+  opencode:
+    command: opencode
+    default_route: provider_routed
+    api_key_hazards: []
+  ollama:
+    command: ollama
+    default_route: local
+    api_key_hazards: []
