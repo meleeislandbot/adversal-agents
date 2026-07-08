@@ -2,7 +2,7 @@
 
 Portable, agent-guided setup for red-teaming AI agents with multiple provider CLIs, local tools, reproducible traces, and cost controls.
 
-The project is intentionally **profile-agnostic**: there is no required "official" Hermes coordinator profile. The coordinator is whichever agent the user opens in this repository — Hermes, Claude Code, Codex, Gemini, OpenCode, or another capable agent.
+The project is intentionally **profile-agnostic** at the repository level: there is no required official Hermes profile. For serious work, however, we recommend a dedicated Hermes coordinator profile using `profiles/hermes-redteam-coordinator/SOUL.md`.
 
 ## Quick start for humans
 
@@ -12,28 +12,16 @@ Repository:
 https://github.com/meleeislandbot/adversal-agents
 ```
 
-If the repo is already cloned/open, paste the prompt from:
+Paste the single setup prompt from:
 
 ```text
-prompts/copy-paste-setup.md
+prompts/setup.md
 ```
 
-If the repo is not cloned yet, paste the URL bootstrap prompt from:
-
-```text
-prompts/bootstrap-from-url.md
-```
-
-The agent should then follow:
+The prompt tells the agent to open/clone the repo if needed and then follow:
 
 ```text
 instructions.md
-```
-
-Raw instructions URL:
-
-```text
-https://raw.githubusercontent.com/meleeislandbot/adversal-agents/main/instructions.md
 ```
 
 The setup is guided and incremental: the agent checks one thing at a time, fixes safe missing pieces itself, and only stops for decisions, login, credentials, cost risk, sudo, destructive actions, or global configuration changes.
@@ -41,9 +29,12 @@ The setup is guided and incremental: the agent checks one thing at a time, fixes
 ## What this repo provides
 
 ```text
-AGENTS.md                 # persistent project instructions for agents
+AGENTS.md                 # shared project instructions for agents that support it
+CLAUDE.md                 # Claude Code entrypoint
+.hermes.md                # Hermes project context
 instructions.md           # guided setup procedure for agents
-prompts/                  # copy/paste prompts for users
+prompts/setup.md          # the single copy/paste setup prompt
+profiles/                 # optional Hermes coordinator SOUL.md template
 .adversal/                # project-local control plane
   project.yaml            # manifest and policy defaults
   scenarios/              # red-team scenario registry
@@ -53,6 +44,7 @@ prompts/                  # copy/paste prompts for users
   runs/                   # generated run traces, ignored by git except .gitkeep
 llm-wiki/                 # curated research wiki and source notes
 scripts/                  # read-only diagnostics and small setup helpers
+docs/                     # architecture, maintenance, release, and profile docs
 ```
 
 ## Design principles
@@ -64,6 +56,7 @@ scripts/                  # read-only diagnostics and small setup helpers
 - **Deterministic scoring first**; LLM judges only for ambiguity.
 - **Trace everything**: prompts, tool calls, outputs, verdicts, budget and auth route.
 - **Provider CLIs are workers**, not coordinator profiles.
+- **Professional maintenance**: versioned, reviewed, validated, and release-managed.
 
 ## Safety and cost policy
 
@@ -78,6 +71,24 @@ By default, setup must not:
 - overwrite existing project files.
 
 The agent may create missing project-local folders/files and run read-only diagnostics without interrupting the user.
+
+## Professional maintenance
+
+This repository uses:
+
+- Semantic Versioning via `VERSION`;
+- release history in `CHANGELOG.md`;
+- Conventional Commits;
+- branch + pull request workflow for non-trivial changes;
+- repository validation via `make validate`;
+- GitHub Actions validation on pushes and pull requests.
+
+See:
+
+- `CONTRIBUTING.md`
+- `docs/repository-maintenance.md`
+- `docs/release-process.md`
+- `docs/hermes-coordinator-profile.md`
 
 ## Current status
 

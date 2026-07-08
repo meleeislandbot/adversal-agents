@@ -3,11 +3,19 @@
 ## Phase 1 — Bootstrap scaffold
 
 - [x] Agent-facing guided setup instructions.
-- [x] Human copy/paste prompt.
+- [x] Single human copy/paste prompt at `prompts/setup.md`.
 - [x] Project-local `.adversal/` control plane.
 - [x] Initial safe scenario registry.
 - [x] Read-only environment diagnostic helper.
 - [x] Cost and auth-route policy.
+
+## Phase 0.5 — Repository professionalism
+
+- [x] Add `CLAUDE.md` for Claude Code compatibility.
+- [x] Add Hermes coordinator `SOUL.md` template.
+- [x] Add versioning, changelog, contribution, security, and release-process docs.
+- [x] Add repository validation script and GitHub Actions workflow.
+- [ ] Add branch protection once the first validation workflow has run successfully.
 
 ## Phase 2 — Worker adapters
 

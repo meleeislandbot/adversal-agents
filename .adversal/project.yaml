@@ -59,3 +59,15 @@ worker_backends:
     command: ollama
     default_route: local
     api_key_hazards: []
+
+maintenance_policy:
+  version_file: VERSION
+  changelog: CHANGELOG.md
+  commits: conventional_commits
+  required_validation: make validate
+  prompt_policy: exactly_one_prompt_at_prompts_setup_md
+  context_entrypoints:
+    hermes: .hermes.md
+    claude_code: CLAUDE.md
+    shared_agents: AGENTS.md
+    hermes_profile_soul_template: profiles/hermes-redteam-coordinator/SOUL.md
