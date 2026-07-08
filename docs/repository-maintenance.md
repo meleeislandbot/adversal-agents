@@ -2,8 +2,10 @@
 
 ## Branch strategy
 
-- `main` is stable.
+- `main` is stable and protected.
 - Non-trivial changes go through a branch and pull request.
+- The `validate` GitHub Actions check is required before merge.
+- Linear history, conversation resolution, and force-push/deletion protection are enabled for `main`.
 - Branch prefixes: `feat/`, `fix/`, `docs/`, `ci/`, `chore/`, `refactor/`.
 
 ## Commit style
