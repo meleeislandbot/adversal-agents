@@ -21,10 +21,7 @@ Copy the prompt below and paste it into the agent you want to use for the one-ti
 Read and follow this one-time setup guide exactly:
 https://github.com/meleeislandbot/adversal-agents/blob/main/instructions.md
 
-If the repo is not local yet, clone/open:
-https://github.com/meleeislandbot/adversal-agents
-
-Set it up from the repo root. Ask me only when the instructions tell you to.
+Ask me only when the instructions tell you to.
 ```
 <!-- adversal-setup-prompt:end -->
 
