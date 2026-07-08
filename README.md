@@ -6,16 +6,34 @@ The project is intentionally **profile-agnostic**: there is no required "officia
 
 ## Quick start for humans
 
-Open your preferred coding agent in this repository and paste the prompt from:
+Repository:
+
+```text
+https://github.com/meleeislandbot/adversal-agents
+```
+
+If the repo is already cloned/open, paste the prompt from:
 
 ```text
 prompts/copy-paste-setup.md
+```
+
+If the repo is not cloned yet, paste the URL bootstrap prompt from:
+
+```text
+prompts/bootstrap-from-url.md
 ```
 
 The agent should then follow:
 
 ```text
 instructions.md
+```
+
+Raw instructions URL:
+
+```text
+https://raw.githubusercontent.com/meleeislandbot/adversal-agents/main/instructions.md
 ```
 
 The setup is guided and incremental: the agent checks one thing at a time, fixes safe missing pieces itself, and only stops for decisions, login, credentials, cost risk, sudo, destructive actions, or global configuration changes.
