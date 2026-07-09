@@ -85,7 +85,9 @@ Ask me only when the instructions tell you to.
 
 ## Status
 
-Early. The deterministic gate, role prompts, epistemic contract, and control
-plane are in place. The live provider adapters and Lean integration are the next
-build (see [`docs/roadmap.md`](docs/roadmap.md)). The `llm-wiki/` still contains
-research from the project's earlier red-team framing; treat it as background.
+Early but running end to end. The deterministic gate, Lean kernel integration,
+adversarial roles, the Claude Code worker adapter, and a mission runner are in
+place (see [`docs/roadmap.md`](docs/roadmap.md)); adapters for the other
+providers are next. An instantiated project grows its own `llm-wiki/` — the
+coordinator's gated knowledge base — locally; the source repo ships only the
+empty template under `templates/project/llm-wiki/`.

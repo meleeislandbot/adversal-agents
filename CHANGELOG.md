@@ -2,6 +2,17 @@
 
 This project follows [Semantic Versioning](https://semver.org/) and uses Conventional Commits.
 
+## [0.2.1] - 2026-07-09
+
+### Changed
+
+- The source repo no longer ships a personal research wiki. A project's
+  `llm-wiki/` is now local per-project state — the coordinator's gated knowledge
+  base — and the repo carries only an empty template under
+  `templates/project/llm-wiki/` with `verified/`, `prior-art/`, and `dead-ends/`
+  sections plus the gate-promotion rule. The root `llm-wiki/` is git-ignored and
+  a `make validate` guard prevents a personal wiki from being committed.
+
 ## [0.2.0] - 2026-07-09
 
 ### Changed
