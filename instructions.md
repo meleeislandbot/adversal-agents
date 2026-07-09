@@ -70,8 +70,10 @@ into them.
 ## Phase 5 — Control plane
 
 Copy the bootstrap assets from `templates/project/` into the root: the
-`.adversal/` control plane, `roles/`, and `scripts/`. Do not clone the whole
-source repo for runtime state. Create empty ledgers without overwriting:
+`.adversal/` control plane, `roles/`, `scripts/`, and the empty `llm-wiki/`
+template (the coordinator's gated knowledge base — it grows per project, so
+start it empty; never copy someone else's wiki). Do not clone the whole source
+repo for runtime state. Create empty ledgers without overwriting:
 `.adversal/ledgers/{claims,objections,decisions,budget}.jsonl`.
 
 ## Phase 6 — Verify the worker CLIs

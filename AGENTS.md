@@ -61,5 +61,8 @@ in `.adversal/ledgers/budget.jsonl`. Check API-key env vars by presence only.
 Branch for non-trivial changes; Conventional Commits; update `CHANGELOG.md` for
 user-visible changes; run `make validate` before pushing; prefer pull requests.
 
-The `llm-wiki/` still holds research from the earlier red-team framing. Treat it
-as background context, not as the current objective.
+A project's `llm-wiki/` is the coordinator's canonical brain: verified lemmas,
+cited prior art, and dead-ends, written only by promotion from a gate-certified
+verdict (see `docs/coordinator-runbook.md`). It is local per-project state, grown
+from mission outcomes — the source repo ships only the empty template under
+`templates/project/llm-wiki/`, never a personal wiki.

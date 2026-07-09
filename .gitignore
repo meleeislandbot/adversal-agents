@@ -6,8 +6,13 @@
 .idea/
 
 # Runtime artifacts in a checked-out source repo. Versioned bootstrap assets
-# live under templates/project/.adversal/ instead.
+# live under templates/project/ instead.
 /.adversal/
+
+# A project's live knowledge base is local state, grown per project from verified
+# mission outcomes. The source repo ships only the empty template under
+# templates/project/llm-wiki/. Do not commit a personal wiki here.
+/llm-wiki/
 
 # Secrets / local credentials
 .env

@@ -60,9 +60,12 @@ infallible oracle: workers propose, the gate disposes, dissent survives.
 ## Source repo vs instantiated project
 
 The source repository holds versioned bootstrap assets under `templates/project/`
-(roles, schema, scripts, control-plane template). An instantiated project stores
-live state under its own `.adversal/`: runs, ledgers, worker status, verdicts.
-Live runtime state is never committed to the source repository.
+(roles, schema, scripts, control-plane template, and the empty `llm-wiki/`
+template). An instantiated project stores live state under its own `.adversal/`
+(runs, ledgers, worker status, verdicts) and grows its own `llm-wiki/` knowledge
+base from verified outcomes. Neither the live `.adversal/` nor a project's
+`llm-wiki/` is ever committed to the source repository — only the empty
+templates are.
 
 ## Autonomy is safe here because the gate is objective
 

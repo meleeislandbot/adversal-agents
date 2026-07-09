@@ -29,6 +29,7 @@ REQUIRED_FILES = [
     "templates/project/scripts/verdict_engine.py",
     "templates/project/roles/skeptic.md",
     "templates/project/.adversal/schema/claim.schema.json",
+    "templates/project/llm-wiki/index.md",
     "templates/project/.adversal/project.yaml",
     "templates/project/scripts/adversal_doctor.py",
     "templates/project/scripts/create_run_skeleton.py",
@@ -127,9 +128,12 @@ def check_yaml_if_available() -> None:
 
 
 def check_runtime_state_not_tracked_at_repo_root() -> None:
-    tracked = git_files(".adversal")
-    if tracked:
-        fail(f"repo-root runtime .adversal files are tracked; use templates/project instead: {tracked}")
+    # A project's live control plane and knowledge base are local state. Only the
+    # empty templates under templates/project/ belong in the source repo.
+    for path in (".adversal", "llm-wiki"):
+        tracked = git_files(path)
+        if tracked:
+            fail(f"repo-root runtime state '{path}/' is tracked; use templates/project/ instead: {tracked[:5]}")
 
 
 def check_no_generated_template_runs_tracked() -> None:
