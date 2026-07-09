@@ -28,7 +28,14 @@ import os
 import re
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
+
+# If present, these override the subscription login and force a metered API
+# route. Scrubbed from the worker env by default so calls stay on subscription.
+# (ANTHROPIC_BASE_URL is left alone: it redirects the endpoint, not the billing
+# identity, and some networks need it for egress.)
+BILLING_VARS = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
 
 ALLOWED_STATUS = {"proven", "known", "refuted", "conjecture", "sketch", "not_established"}
 EV_FIELDS = {"type", "ref", "detail", "verified"}
@@ -96,19 +103,48 @@ def looks_like_failure(text: str) -> bool:
     return any(m in low for m in FAILURE_MARKERS)
 
 
-def call_claude(prompt: str, cwd: Path, timeout: int) -> str:
-    """Invoke Claude Code non-interactively and return the model's text."""
+def call_claude(prompt: str, cwd: Path, timeout: int,
+                allow_api: bool = False) -> tuple[str, float, str]:
+    """Invoke Claude Code non-interactively; return (text, notional_cost, route).
+
+    By default the API-key/token env vars are scrubbed so the call uses the
+    subscription login rather than a metered API route. `total_cost_usd` is
+    Claude Code's notional token cost — reported on every plan, including
+    subscription — so it is recorded for usage tracking, not because a
+    subscription call is charged money.
+    """
+    child_env = dict(os.environ)
+    route = "api-or-token-env"
+    if not allow_api:
+        for var in BILLING_VARS:
+            child_env.pop(var, None)
+        route = "subscription-preferred"
     proc = subprocess.run(
         ["claude", "-p", prompt, "--output-format", "json"],
-        cwd=str(cwd), text=True, capture_output=True, timeout=timeout, check=False)
+        cwd=str(cwd), env=child_env, text=True, capture_output=True,
+        timeout=timeout, check=False)
     out = (proc.stdout or "").strip()
+    text, cost = out or (proc.stderr or ""), 0.0
     try:  # `--output-format json` wraps the reply as {"result": "...", ...}
         env = json.loads(out)
-        if isinstance(env, dict) and "result" in env:
-            return str(env["result"])
+        if isinstance(env, dict):
+            if "result" in env:
+                text = str(env["result"])
+            cost = float(env.get("total_cost_usd") or 0.0)
     except Exception:
         pass
-    return out or (proc.stderr or "")
+    return text, cost, route
+
+
+def record_budget(run: Path, role: str, claim_id: str, route: str, cost: float) -> None:
+    """Log each call's route and notional cost so usage is auditable."""
+    entry = {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "worker": "claude", "role": role, "claim_id": claim_id,
+        "route": route, "notional_cost_usd": round(cost, 6),
+    }
+    with (run / "budget.jsonl").open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(entry) + "\n")
 
 
 def normalize(obj: dict | None, role: str, claim_id: str, raw: str) -> dict:
@@ -142,12 +178,18 @@ def main() -> int:
     ap.add_argument("--timeout", type=int, default=180)
     ap.add_argument("--dry-run", action="store_true",
                     help="write an honest placeholder assessment without calling Claude")
+    ap.add_argument("--allow-api", action="store_true",
+                    help="allow a metered API route (default scrubs API-key vars to stay on subscription)")
     args = ap.parse_args()
 
     (args.run / "workers").mkdir(parents=True, exist_ok=True)
-    if os.getenv("ANTHROPIC_API_KEY"):
-        print("warning: ANTHROPIC_API_KEY is set; Claude Code may use metered billing.",
-              file=sys.stderr)
+    if os.getenv("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_AUTH_TOKEN"):
+        if args.allow_api:
+            print("warning: --allow-api set with an API key/token present; this may use metered billing.",
+                  file=sys.stderr)
+        else:
+            print("note: an API key/token is present but scrubbed for this worker; using the subscription login.",
+                  file=sys.stderr)
 
     failed = False
     if args.dry_run:
@@ -155,7 +197,9 @@ def main() -> int:
                         args.role, args.claim_id, "")
     else:
         prompt = build_prompt(args.role, args.claim_id, args.statement)
-        raw = call_claude(prompt, args.run, args.timeout)
+        raw, cost, route = call_claude(prompt, args.run, args.timeout, allow_api=args.allow_api)
+        record_budget(args.run, args.role, args.claim_id, route, cost)
+        print(f"[claude_worker] route={route} notional_cost_usd={cost:.4f}", file=sys.stderr)
         if looks_like_failure(raw):
             # A worker that could not run is NOT the same as a worker that judged
             # nothing. Signal it loudly so the coordinator does not count it.

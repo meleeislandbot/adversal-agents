@@ -42,7 +42,14 @@ This project follows [Semantic Versioning](https://semver.org/) and uses Convent
   drives `claude -p` in one role against one claim and returns a schema-valid
   assessment; for the formalizer it saves the model's Lean source for the kernel
   to check. Has a `--dry-run` mode and signals worker failure with a non-zero
-  exit so an auth/rate error is never mistaken for a real judgment.
+  exit so an auth/rate error is never mistaken for a real judgment. Defaults to
+  the subscription login by scrubbing API-key/token env vars (override with
+  `--allow-api`), and logs each call's route and notional cost.
+- `templates/project/scripts/run_mission.py` — the coordinator's core action:
+  one command takes a claim, dispatches the council roles as isolated workers,
+  runs the gate, and records the outcome in the decisions and budget ledgers.
+- `docs/coordinator-runbook.md` — how Hermes drives a mission (it coordinates;
+  the kernel and rules decide) and how to set up the coordinator profile.
 
 ## [0.1.0] - 2026-07-08
 

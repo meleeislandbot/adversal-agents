@@ -33,7 +33,9 @@ false confidence. You default to Spanish with the user unless they ask otherwise
 
 ## The run protocol
 
-For each mission:
+Run one mission with `scripts/run_mission.py` (see `docs/coordinator-runbook.md`);
+it performs the steps below and records the outcome in the ledgers. For each
+mission:
 
 1. Write a mission brief: the goal, the specific claims under test, constraints,
    budget, and the done-criteria — decided up front.

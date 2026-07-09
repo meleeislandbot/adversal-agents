@@ -42,11 +42,13 @@ The gate is what makes everything else safe, so it cannot be last.
 
 ## Phase 4 — Coordinator loop
 
-- [ ] Mission brief format and run-directory generator.
+- [x] Mission brief + run-directory generator and end-to-end runner
+      (`run_mission.py`): claim -> roles -> gate -> ledgers, with a `--dry-run`.
+- [x] Honest run report: proven / known / refuted / not_established counts.
+- [x] Decisions and budget ledgers written per run (subscription route + notional
+      cost logged); canonical-brain promotion via the gate still pending.
 - [ ] Bounded autonomous loop: generate -> formalize -> check -> repair, with
-      hard budget and escalation triggers.
-- [ ] Two-plane ledger writer and canonical-brain promotion via the gate only.
-- [ ] Honest run report: proven / known / refuted / not_established counts.
+      hard budget and escalation triggers (currently single-shot per mission).
 
 ## Phase 5 — Researcher experience
 
