@@ -17,17 +17,25 @@ The gate is what makes everything else safe, so it cannot be last.
 
 ## Phase 2 — Formal verification integration
 
-- [ ] Lean 4 + mathlib project scaffold generated per run.
-- [ ] Formalizer worker writes `.lean` files; engine runs `lake build` and
-      records the true result.
-- [ ] Treat `sorry`/`admit`/added-axiom as failure automatically.
+- [x] Engine runs `lake build` (in a Lake project) or `lean` (standalone) and
+      records the true kernel result; finds an elan toolchain even when it is
+      not on `PATH`.
+- [x] Treat `sorry`/`admit` as failure automatically.
+- [ ] Lean 4 + mathlib project scaffold generated per run (standalone,
+      mathlib-free files already verify today).
 - [ ] Cache verified lemmas so re-checks are cheap.
 
 ## Phase 3 — Provider adapters (remove the human messenger)
 
-- [ ] One-shot adapter per provider CLI (Claude Code, Codex, Gemini, Grok/other,
-      OpenCode), each: takes a role + brief, returns schema-valid JSON.
-- [ ] Output normalization: force heterogeneous CLIs into the claim schema.
+- [x] Claude Code one-shot adapter (`claude_worker.py`): role + claim ->
+      schema-valid JSON, with a `--dry-run` mode and loud non-zero failure
+      signaling. Codex / Gemini / Grok / OpenCode adapters pending.
+- [x] Output normalization: force heterogeneous CLI output into the claim schema
+      (implemented for Claude; reused by future adapters).
+- [ ] Resolve headless subscription auth so `claude -p` runs as a worker on the
+      host. Blocked in nested/sandboxed shells that have no Claude login
+      (`claude -p` returns "Not logged in"); works where the user has run
+      `claude login`.
 - [ ] Auth-route and cost detection per provider; budget ledger entries.
 - [ ] Capability routing: send formalization to the strongest Lean model, ideas
       to others, mechanical work to a cheap/local model.

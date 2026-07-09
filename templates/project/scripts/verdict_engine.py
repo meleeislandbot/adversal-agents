@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -91,33 +92,69 @@ def _count_sycophancy(text: str) -> int:
     return sum(len(re.findall(pat, low)) for pat in SYCOPHANCY_MARKERS)
 
 
+def _resolve_tool(name: str) -> str | None:
+    """Find a Lean tool on PATH, or in an elan install that never touched PATH."""
+    found = shutil.which(name)
+    if found:
+        return found
+    fallback = Path.home() / ".elan" / "bin" / name
+    return str(fallback) if fallback.exists() else None
+
+
+def _find_lakefile(start: Path) -> Path | None:
+    for parent in [start, *start.parents]:
+        if (parent / "lakefile.lean").exists() or (parent / "lakefile.toml").exists():
+            return parent
+    return None
+
+
 def _lean_check(ref: str, run_root: Path) -> bool:
     """Return True only if a Lean artifact is confirmed by an actual build.
 
     If Lean is not installed here we CANNOT confirm it, so we return False.
     Unchecked is not proven. That is the whole point.
+
+    A proof that leans on ``sorry``/``admit`` is not a proof: Lean only warns on
+    it and exits 0, so we reject it explicitly. Erring toward "not proven" is the
+    correct bias for a truth gate.
     """
     path = (run_root / ref) if not Path(ref).is_absolute() else Path(ref)
     if not path.exists():
         return False
-    lake = shutil.which("lake") or shutil.which("lean")
-    if not lake:
+    try:
+        src = path.read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        return False
+    if re.search(r"\bsorry\b", src) or re.search(r"\badmit\b", src):
         return False
     try:
-        # Prefer `lake build` at the project containing the file; fall back to `lean`.
-        if shutil.which("lake"):
-            proc = subprocess.run(
-                ["lake", "build"], cwd=str(path.parent), text=True,
-                capture_output=True, timeout=600, check=False,
-            )
-        else:
-            proc = subprocess.run(
-                ["lean", str(path)], text=True, capture_output=True,
-                timeout=600, check=False,
-            )
+        project = _find_lakefile(path.parent)
+        if project:  # inside a Lake project (e.g. one using mathlib): full build
+            lake = _resolve_tool("lake")
+            if not lake:
+                return False
+            proc = subprocess.run(["lake", "build"], cwd=str(project), text=True,
+                                  capture_output=True, timeout=1800, check=False,
+                                  env={**os.environ, "PATH": _lean_bin_path()})
+        else:  # standalone file: type-check it directly
+            lean = _resolve_tool("lean")
+            if not lean:
+                return False
+            proc = subprocess.run([lean, str(path)], text=True, capture_output=True,
+                                  timeout=600, check=False)
+        out = (proc.stdout + proc.stderr).lower()
+        if "sorry" in out or "error" in out:
+            return False
         return proc.returncode == 0
     except Exception:
         return False
+
+
+def _lean_bin_path() -> str:
+    """PATH augmented with the elan bin dir so `lake` can find `lean`."""
+    elan_bin = Path.home() / ".elan" / "bin"
+    base = os.environ.get("PATH", "")
+    return f"{elan_bin}:{base}" if elan_bin.exists() else base
 
 
 def decide(claim_id: str, statement: str, assessments: list[WorkerAssessment],
@@ -166,8 +203,8 @@ def decide(claim_id: str, statement: str, assessments: list[WorkerAssessment],
     claims_formal = any(e.type == "lean" for a in assessments for e in a.evidence)
     if claims_formal:
         return ClaimVerdict(claim_id, statement, STATUS_NOT_ESTABLISHED,
-                            decided_by="rule4_formal_unchecked", novel=False,
-                            dissent=dissent + ["lean artifact present but not kernel-checked here"],
+                            decided_by="rule4_formal_unverified", novel=False,
+                            dissent=dissent + ["lean artifact did not pass a kernel check here"],
                             sycophancy_hits=sycophancy)
 
     # Rule 5 — genuine, evidence-backed disagreement is a result. Bare opinions
@@ -195,10 +232,13 @@ def decide(claim_id: str, statement: str, assessments: list[WorkerAssessment],
 
 def load_run(run_root: Path) -> dict[str, list[WorkerAssessment]]:
     by_claim: dict[str, list[WorkerAssessment]] = {}
+    ev_fields = {"type", "ref", "detail", "verified"}
     for jf in sorted((run_root / "workers").glob("*.json")):
         data = json.loads(jf.read_text(encoding="utf-8"))
         for item in (data if isinstance(data, list) else [data]):
-            ev = [Evidence(**e) for e in item.get("evidence", [])]
+            # Model-produced JSON may carry extra keys; keep only what we model.
+            ev = [Evidence(**{k: v for k, v in e.items() if k in ev_fields})
+                  for e in item.get("evidence", []) if isinstance(e, dict) and e.get("type")]
             a = WorkerAssessment(
                 claim_id=item["claim_id"], role=item.get("role", "unknown"),
                 worker=item.get("worker", jf.stem),

@@ -33,6 +33,16 @@ This project follows [Semantic Versioning](https://semver.org/) and uses Convent
   (`claim.schema.json`).
 - Lean-toolchain detection in `adversal_doctor.py`; the verdict-engine self-test
   wired into `make validate` so CI guarantees the gate cannot be flattered.
+- Real Lean kernel integration in the verdict engine: it type-checks standalone
+  `.lean` files (or `lake build`s a Lake project), finds an elan toolchain even
+  when it is off `PATH`, and rejects any proof using `sorry`/`admit` (Lean only
+  warns and exits 0 on those). Verified end-to-end: a true theorem becomes
+  `proven`; `2 + 2 = 5` and a `sorry` proof stay `not_established`.
+- `templates/project/scripts/claude_worker.py` — Claude Code worker adapter that
+  drives `claude -p` in one role against one claim and returns a schema-valid
+  assessment; for the formalizer it saves the model's Lean source for the kernel
+  to check. Has a `--dry-run` mode and signals worker failure with a non-zero
+  exit so an auth/rate error is never mistaken for a real judgment.
 
 ## [0.1.0] - 2026-07-08
 
