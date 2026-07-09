@@ -55,8 +55,16 @@ The gate is real and runs today with no paid API:
 python3 templates/project/scripts/verdict_engine.py --selftest
 ```
 
-It demonstrates that five workers at 0.99 confidence, praising loudly, still
-produce `not_established` — and that one evidenced refutation beats them all.
+When Lean is installed, exercise the actual kernel boundary too:
+
+```bash
+python3 templates/project/scripts/verdict_engine.py --selftest-lean
+```
+
+The tests demonstrate that confidence and praise earn nothing; worker-authored
+citations and counterexamples also remain `not_established` until an independent
+validator confirms them. `proven` is bound to an exact canonical Lean type, not
+to the worker's natural-language description.
 
 ## Roles and contract
 

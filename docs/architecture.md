@@ -22,7 +22,8 @@ what is true.
                 |
         Deterministic verdict engine  (no LLM, no network)
         - cold-iron rules, in priority order
-        - re-runs Lean builds; confirms citations
+        - checks the exact submitted Lean theorem/type
+        - accepts citations/refutations only after independent validation
                 |
         verdict.json / verdict.md  +  append-only ledgers
 ```
@@ -38,6 +39,12 @@ what is true.
    for voting. Workers communicate only through artifacts.
 3. **Judgment (the gate).** A deterministic engine and a proof assistant. This
    is the only component allowed to grant `proven`. It cannot be flattered.
+
+The canonical mathematical object is the Lean type in `claims.json`. Its prose
+`statement` is explanatory and is not itself kernel-certified; this prevents a
+model from proving an easy formal statement and attaching it to a stronger
+English claim. Workers run without tools in isolated empty directories and can
+only return proposal JSON.
 
 ## Why workers are isolated
 

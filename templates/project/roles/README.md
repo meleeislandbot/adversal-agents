@@ -49,3 +49,9 @@ Two rules every role must obey:
    discarded. Say what would have to be true, and whether it is verified.
 2. **No praise.** Words like "genius", "breakthrough", "you're close" are
    counted and ignored by the engine. They cost you credibility, nothing more.
+
+The `verified` evidence field is never trusted when it comes from a worker. A
+worker may propose a citation, counterexample, or Lean file; only an independent
+validator can verify it. Natural-language claims live in `claims.json` for human
+explanation. A `proven` verdict applies only to the exact `formal_statement`
+type in that file, witnessed by its named Lean declaration.

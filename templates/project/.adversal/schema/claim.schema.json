@@ -6,7 +6,7 @@
   "required": ["claim_id", "role", "worker", "status_vote"],
   "additionalProperties": false,
   "properties": {
-    "claim_id": {"type": "string"},
+    "claim_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"},
     "role": {"enum": ["strategist", "formalizer", "prior-art-auditor", "skeptic"]},
     "worker": {"type": "string", "description": "provider that produced this: claude, gpt, gemini, grok, hermes, ..."},
     "status_vote": {"enum": ["proven", "known", "refuted", "conjecture", "sketch", "not_established"]},
@@ -20,7 +20,7 @@
           "type": {"enum": ["lean", "citation", "counterexample", "argument"]},
           "ref": {"type": "string", "description": "file path (lean), DOI/URL/theorem name (citation), else empty"},
           "detail": {"type": "string"},
-          "verified": {"type": "boolean", "description": "only true after an actual check; never self-asserted"}
+          "verified": {"type": "boolean", "description": "worker assertion only; the verdict engine never trusts this field"}
         }
       }
     },

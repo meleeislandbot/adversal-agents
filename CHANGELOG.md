@@ -2,6 +2,27 @@
 
 This project follows [Semantic Versioning](https://semver.org/) and uses Conventional Commits.
 
+## [Unreleased]
+
+### Changed
+
+- Hardened the truth boundary: `proven` now requires the submitted Lean file to
+  define a named declaration with exactly the canonical formal type. The gate
+  rejects path escapes, unrelated compiling theorems, `sorry`/`admit`, and
+  model-introduced axioms.
+- Worker-authored citations and counterexamples are treated as unverified leads,
+  never as automatic `known` or `refuted` verdicts.
+- Claude workers run without tools or project customizations in isolated empty
+  directories, preventing cross-worker draft access.
+- Claims with no worker output now receive explicit `not_established` verdicts,
+  and mission failures propagate non-zero exit codes.
+- CI now installs the pinned Lean toolchain and exercises the real kernel-boundary
+  self-test on every pull request.
+
+### Fixed
+
+- `ideate.py --audit --dry-run` no longer performs real auditor calls.
+
 ## [0.3.1] - 2026-07-09
 
 ### Added

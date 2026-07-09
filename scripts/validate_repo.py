@@ -6,7 +6,10 @@ No network calls. No secrets printed.
 from __future__ import annotations
 
 import ast
+import json
+import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -23,12 +26,14 @@ REQUIRED_FILES = [
     "AGENTS.md",
     "CLAUDE.md",
     "GEMINI.md",
+    "lean-toolchain",
     ".hermes.md",
     "profiles/hermes-verification-coordinator/SOUL.md",
     "docs/epistemics.md",
     "templates/project/scripts/verdict_engine.py",
     "templates/project/roles/skeptic.md",
     "templates/project/.adversal/schema/claim.schema.json",
+    "templates/project/.adversal/schema/claims.schema.json",
     "templates/project/llm-wiki/index.md",
     "templates/project/.adversal/project.yaml",
     "templates/project/scripts/adversal_doctor.py",
@@ -116,6 +121,38 @@ def check_verdict_engine_selftest() -> None:
     )
 
 
+def check_verdict_engine_lean_selftest_if_available() -> None:
+    """Exercise the kernel boundary when Lean is installed, including via elan."""
+    lean = shutil.which("lean")
+    if lean is None:
+        fallback = Path.home() / ".elan" / "bin" / "lean"
+        lean = str(fallback) if fallback.exists() else None
+    if lean is None:
+        return
+    env = dict(os.environ)
+    env["PATH"] = f"{Path(lean).parent}:{env.get('PATH', '')}"
+    subprocess.run(
+        [sys.executable, "templates/project/scripts/verdict_engine.py", "--selftest-lean"],
+        cwd=ROOT,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=True,
+        timeout=60,
+        env=env,
+    )
+
+
+def check_json_schemas_parse() -> None:
+    for rel in (
+        "templates/project/.adversal/schema/claim.schema.json",
+        "templates/project/.adversal/schema/claims.schema.json",
+    ):
+        data = json.loads((ROOT / rel).read_text(encoding="utf-8"))
+        if not isinstance(data, dict) or data.get("$schema") is None:
+            fail(f"{rel} did not parse as a JSON schema")
+
+
 def check_yaml_if_available() -> None:
     try:
         import yaml  # type: ignore
@@ -173,6 +210,8 @@ def main() -> int:
     check_python_syntax()
     check_template_doctor_runs()
     check_verdict_engine_selftest()
+    check_verdict_engine_lean_selftest_if_available()
+    check_json_schemas_parse()
     check_yaml_if_available()
     check_runtime_state_not_tracked_at_repo_root()
     check_no_generated_template_runs_tracked()

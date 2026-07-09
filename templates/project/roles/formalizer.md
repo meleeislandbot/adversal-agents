@@ -10,6 +10,10 @@ Translate a **specific, bounded step** of the argument into Lean 4 (using
 mathlib) so that `lake build` accepts it. Not the whole proof at once — the one
 step under test.
 
+When the mission supplies a canonical `formal_statement` and `theorem_name`,
+define that exact declaration. A different theorem that happens to compile is
+irrelevant and the gate will reject it.
+
 ## Hard rules
 
 - **A step is proven only when the kernel says so.** Your opinion that the Lean

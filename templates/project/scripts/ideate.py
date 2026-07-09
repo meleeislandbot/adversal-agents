@@ -107,6 +107,8 @@ def main() -> int:
                    "--statement", "Is this proposed research direction already a known program "
                    "in the literature? Name and cite it if so:\n\n" + direction,
                    "--timeout", str(args.timeout)]
+            if args.dry_run:
+                cmd.append("--dry-run")
             if args.allow_api:
                 cmd.append("--allow-api")
             subprocess.run(cmd, check=False)

@@ -17,10 +17,14 @@ The gate is what makes everything else safe, so it cannot be last.
 
 ## Phase 2 — Formal verification integration
 
-- [x] Engine runs `lake build` (in a Lake project) or `lean` (standalone) and
-      records the true kernel result; finds an elan toolchain even when it is
+- [x] Engine checks the exact submitted file with `lake env lean` (in a Lake
+      project) or `lean` (standalone); finds an elan toolchain even when it is
       not on `PATH`.
 - [x] Treat `sorry`/`admit` as failure automatically.
+- [x] Bind `proven` to an exact canonical Lean type and named declaration;
+      reject unrelated files, path escapes, and introduced axioms.
+- [ ] Add independent validators for citations and counterexamples. Until then,
+      worker proposals fail closed as `not_established`.
 - [ ] Lean 4 + mathlib project scaffold generated per run (standalone,
       mathlib-free files already verify today).
 - [ ] Cache verified lemmas so re-checks are cheap.
