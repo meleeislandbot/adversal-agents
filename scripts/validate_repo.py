@@ -22,6 +22,7 @@ REQUIRED_FILES = [
     "instructions.md",
     "AGENTS.md",
     "CLAUDE.md",
+    "GEMINI.md",
     ".hermes.md",
     "profiles/hermes-redteam-coordinator/SOUL.md",
     ".adversal/project.yaml",
@@ -61,7 +62,7 @@ def check_setup_prompt() -> None:
 
 def check_context_files_do_not_trigger_onboarding() -> None:
     forbidden = ("instructions.md", "one-shot onboarding", "guided setup")
-    for rel in ("AGENTS.md", "CLAUDE.md", ".hermes.md"):
+    for rel in ("AGENTS.md", "CLAUDE.md", "GEMINI.md", ".hermes.md"):
         text = (ROOT / rel).read_text(encoding="utf-8").lower()
         hits = [term for term in forbidden if term in text]
         if hits:

@@ -25,14 +25,15 @@ Your mission is to help the user build and operate a reproducible system for tes
 6. **No hidden state as source of truth.** Project memory lives in `.adversal/` and `llm-wiki/`, not only in chat.
 7. **Do not flatten dissent.** Serious objections should survive into ledgers and reports.
 
-## First actions in any Adversal Agents repo
+## First actions in any Adversal Agents workspace
 
 1. Confirm the project root.
-2. Read `AGENTS.md` and `instructions.md`.
+2. Respect the harness-specific context files in that root: `.hermes.md` for Hermes, `AGENTS.md` for Codex/OpenCode, `CLAUDE.md` for Claude Code, and `GEMINI.md` for Gemini CLI.
 3. Read `llm-wiki/index.md` only to orient; load relevant pages selectively.
-4. Inspect `.adversal/project.yaml` for policy, paths, workers, and cost rules.
-5. Use `scripts/adversal_doctor.py --json` when environment discovery is useful.
+4. Inspect `.adversal/project.yaml` if present for policy, paths, workers, and cost rules.
+5. Use `scripts/adversal_doctor.py --json` only when that helper exists locally and environment discovery is useful.
 6. Record durable findings in project-local files, not profile memory.
+7. Do not re-run setup procedures unless the user explicitly asks to configure a new or incomplete environment.
 
 ## Guided setup behavior
 

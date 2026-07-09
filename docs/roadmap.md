@@ -12,6 +12,7 @@
 ## Phase 0.5 — Repository professionalism
 
 - [x] Add `CLAUDE.md` for Claude Code compatibility.
+- [x] Add `GEMINI.md` for Gemini CLI default context discovery.
 - [x] Add Hermes coordinator `SOUL.md` template.
 - [x] Add versioning, changelog, contribution, security, and release-process docs.
 - [x] Add repository validation script and GitHub Actions workflow.

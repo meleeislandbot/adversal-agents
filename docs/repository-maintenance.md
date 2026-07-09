@@ -38,8 +38,9 @@ Validation checks:
 
 - `AGENTS.md`: shared project rules for agents that support it.
 - `CLAUDE.md`: Claude Code entrypoint.
+- `GEMINI.md`: Gemini CLI entrypoint.
 - `.hermes.md`: Hermes project context.
-- `profiles/hermes-redteam-coordinator/SOUL.md`: optional profile identity for the dedicated coordinator.
+- `profiles/hermes-redteam-coordinator/SOUL.md`: coordinator profile template; inert until copied into the selected Hermes profile.
 
 Keep context files concise and route normal agents to `.adversal/project.yaml` and `llm-wiki/index.md`. `instructions.md` is only for one-shot onboarding triggered by the README prompt.
 

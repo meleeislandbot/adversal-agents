@@ -1,45 +1,114 @@
 # Hermes Coordinator Profile
 
-Adversal Agents can be coordinated by any capable agent, but for serious work we recommend creating a dedicated Hermes profile and giving it the project-specific `SOUL.md` in this repository.
+Adversal Agents requires a Hermes coordinator in practice, but this repository cannot activate one merely by being cloned. The user should already have, or explicitly choose, a Hermes profile that will become the coordinator.
 
-## Recommended profile creation
+## What configuration means
 
-Clean profile:
+A Hermes coordinator profile is configured when these pieces are in the places Hermes actually reads:
 
-```bash
-hermes profile create adversal-redteam
+1. `SOUL.md` in the selected profile directory:
+
+   ```text
+   ~/.hermes/profiles/<profile>/SOUL.md
+   ```
+
+2. Required Hermes toolsets enabled for that profile.
+3. Required Hermes skills installed/enabled for that profile.
+4. Project context files in the target project root for the worker harnesses.
+
+The template at:
+
+```text
+profiles/hermes-redteam-coordinator/SOUL.md
 ```
 
-Or clone an existing well-configured profile:
+has no runtime effect until it is copied into the selected Hermes profile or installed by an explicit setup step.
+
+## Read-only discovery
+
+Use read-only commands first:
 
 ```bash
-hermes profile create adversal-redteam --clone-from <existing-profile>
+hermes profile list
+hermes profile show <profile>
+hermes -p <profile> tools --summary list
+hermes -p <profile> skills list
 ```
 
-Then copy or symlink the coordinator soul:
+Do not create, overwrite, or switch profiles without the user's explicit approval.
+
+## Coordinator SOUL
+
+Source template:
+
+```text
+https://raw.githubusercontent.com/meleeislandbot/adversal-agents/main/profiles/hermes-redteam-coordinator/SOUL.md
+```
+
+Install it only after approval, for example:
 
 ```bash
-mkdir -p ~/.hermes/profiles/adversal-redteam
-cp profiles/hermes-redteam-coordinator/SOUL.md ~/.hermes/profiles/adversal-redteam/SOUL.md
+mkdir -p ~/.hermes/profiles/<profile>
+curl -fsSL https://raw.githubusercontent.com/meleeislandbot/adversal-agents/main/profiles/hermes-redteam-coordinator/SOUL.md \
+  -o ~/.hermes/profiles/<profile>/SOUL.md
 ```
 
-Start Hermes from the project root:
+A local clone can copy the same file instead of using `curl`.
+
+## Required skills
+
+Do not recreate existing official skills. Install/enable the official NousResearch/Hermes skills when missing:
 
 ```bash
-cd /path/to/adversal-agents
-hermes --profile adversal-redteam
+hermes -p <profile> skills install skills-sh/nousresearch/hermes-agent/hermes-agent
+hermes -p <profile> skills install skills-sh/nousresearch/hermes-agent/llm-wiki
+hermes -p <profile> skills install skills-sh/nousresearch/hermes-agent/claude-code
+hermes -p <profile> skills install skills-sh/nousresearch/hermes-agent/codex
+hermes -p <profile> skills install skills-sh/nousresearch/hermes-agent/opencode
+hermes -p <profile> skills install skills-sh/nousresearch/hermes-agent/github-auth
+hermes -p <profile> skills install skills-sh/nousresearch/hermes-agent/github-pr-workflow
 ```
 
-## Recommended enabled capabilities
+The wiki directory is only useful to the coordinator if the `llm-wiki` skill is installed/enabled:
 
-The profile should have, at minimum:
+```text
+https://skills.sh/nousresearch/hermes-agent/llm-wiki
+```
 
-- file tools;
-- terminal tools;
-- web/browser only when current-source verification is needed;
-- GitHub tools or `gh` CLI for repository work;
-- memory enabled only for stable user/project preferences, not transient run state;
-- skills enabled for Hermes, GitHub, red teaming, CLI workers, and project workspaces.
+## Required toolsets
+
+At minimum, the coordinator normally needs:
+
+```text
+file
+terminal
+code_execution
+web
+browser
+skills
+todo
+memory
+session_search
+clarify
+delegation
+cronjob
+```
+
+Enable broader side-effect tools only when the user approves the risk and purpose.
+
+## Project context files
+
+Context files belong in the target project root, not inside the Hermes profile:
+
+| Harness | File | Notes |
+|---|---|---|
+| Hermes | `.hermes.md` / `HERMES.md` | First-match priority before `AGENTS.md` and `CLAUDE.md`. |
+| Claude Code | `CLAUDE.md` | Normal project memory; `--bare` skips it. |
+| Codex CLI | `AGENTS.md` | Use `codex exec -C <project-root>` to pin discovery. |
+| Gemini CLI | `GEMINI.md` | Default context filename; can import `AGENTS.md`. |
+| OpenCode | `AGENTS.md` | May fall back to `CLAUDE.md`, but do not rely on fallback. |
+
+Keep these files short. Large, curated knowledge belongs in `llm-wiki/` and only has effect when a coordinator/worker reads it deliberately.
 
 ## What this profile should not do by default
 
@@ -47,11 +116,3 @@ The profile should have, at minimum:
 - It should not write global Hermes configuration without explicit user approval.
 - It should not store run results in profile memory instead of `.adversal/`.
 - It should not treat worker outputs as verified facts.
-
-## Project context files
-
-- Hermes reads `.hermes.md` first when launched from this repo.
-- Claude Code reads `CLAUDE.md`.
-- Codex/OpenCode and several other agents commonly use `AGENTS.md`.
-
-Keep these files short. Large, curated knowledge belongs in `llm-wiki/`.

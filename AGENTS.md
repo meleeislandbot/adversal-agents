@@ -1,6 +1,6 @@
 # Adversal Agents — Project Instructions for Agents
 
-This repository is a project-local workspace for red-teaming AI agents with multiple worker backends.
+This repository is a source repository plus reference workspace for red-teaming AI agents with multiple worker backends.
 
 ## First orientation
 
@@ -14,7 +14,7 @@ Before substantial work:
 ## Coordination model
 
 - The active agent is the coordinator for this session.
-- For high-stakes/long-running work, prefer a dedicated Hermes profile using `profiles/hermes-redteam-coordinator/SOUL.md`.
+- For high-stakes/long-running work, prefer a dedicated Hermes coordinator profile. The repository's `profiles/hermes-redteam-coordinator/SOUL.md` is only a template until copied into that Hermes profile.
 - Do not create one Hermes profile per provider.
 - Provider CLIs such as Claude Code, Codex CLI, Gemini CLI, and OpenCode are worker backends.
 - Workers should communicate through artifacts, traces, ledgers, and proposed patches — not through hidden memory.
