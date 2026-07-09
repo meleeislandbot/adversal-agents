@@ -4,6 +4,21 @@ Portable, agent-guided setup for red-teaming AI agents with multiple provider CL
 
 The project assumes there will be a **Hermes coordinator profile**, but the repository cannot activate that profile by itself. The template at `profiles/hermes-redteam-coordinator/SOUL.md` only has effect after it is copied into the selected Hermes profile or installed by a setup step.
 
+## Project objective
+
+The long-term goal is to build a practical red-team lab for autonomous AI agents: a system where a Hermes coordinator can orchestrate a council of independent worker CLIs, run adversarial scenarios against agentic systems, capture every trace, compare dissenting judgments, and turn failures into reusable regressions.
+
+The ideal version is not just a prompt collection or benchmark wrapper. It is a portable, auditable operating model for agent safety work:
+
+- one guided setup flow that configures an existing coordinator profile and a chosen project root;
+- multiple workers with different strengths, costs, and failure modes, coordinated through files rather than hidden chat state;
+- scenario definitions, traces, ledgers, verdicts, objections, and budget records that survive beyond a single conversation;
+- deterministic checks first, with LLM judgment used only where ambiguity actually requires it;
+- subscription-native and local tools preferred by default, so research does not accidentally become API bill shock;
+- a curated `llm-wiki/` that preserves evidence, methodology, open questions, and lessons from prior runs.
+
+The destination is a reproducible adversarial evaluation workflow: given a target agent, the system should help generate attacks, run them safely, verify outcomes, preserve dissent, measure regressions over time, and make the next test better than the last one.
+
 ## Quick start for humans
 
 Repository:
