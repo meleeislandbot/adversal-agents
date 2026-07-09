@@ -8,6 +8,7 @@ This project follows [Semantic Versioning](https://semver.org/) and uses Convent
 
 - Initial project scaffold for agent-guided red-team setup.
 - Single short setup prompt embedded directly in `README.md`, pointing agents to `instructions.md`.
+- README project objective section describing the ideal end-state: a Hermes-orchestrated, auditable red-team lab for autonomous agents.
 - Agent-facing guided setup procedure in `instructions.md`, scoped as one-shot onboarding.
 - Cross-agent context files: `.hermes.md`, `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` for day-to-day work, separated from one-shot onboarding.
 - Dedicated Hermes coordinator profile template at `profiles/hermes-redteam-coordinator/SOUL.md`, documented as inert until installed/copied into the selected Hermes profile.
