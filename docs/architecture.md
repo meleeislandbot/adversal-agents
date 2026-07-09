@@ -1,50 +1,74 @@
 # Architecture
 
-Adversal Agents is a source repository for configuring project-local orchestration patterns for red-teaming AI agents.
+Adversal Agents is a coordinated council of AI models with a deterministic truth
+gate. The design separates three things that are usually (and dangerously)
+collapsed into one model: process orchestration, generation, and the judgment of
+what is true.
 
 ```text
-configured Hermes coordinator profile
-        |
-        v
-target project root with .hermes.md / AGENTS.md / CLAUDE.md / GEMINI.md
-        |
-        v
-.adversal control plane copied from templates/project/.adversal/
-        |
-        +--> worker backends: Claude Code, Codex CLI, Gemini, OpenCode, local models, deterministic tools
-        |
-        +--> traces, ledgers, scenario registry, budget records
-        |
-        v
-curated llm-wiki
+        Hermes coordinator
+        - runs the protocol loop, manages files, talks to the user
+        - does NOT decide what is true
+                |
+        mission brief + claims under test
+                |
+     +----------+-----------+-----------+
+     |          |           |           |     workers are isolated;
+ strategist  formalizer  prior-art    skeptic  they never see each other's
+     |          |          auditor       |     drafts (no context contamination)
+     +----------+-----------+-----------+
+                |
+   structured assessments: workers/*.json
+                |
+        Deterministic verdict engine  (no LLM, no network)
+        - cold-iron rules, in priority order
+        - re-runs Lean builds; confirms citations
+                |
+        verdict.json / verdict.md  +  append-only ledgers
 ```
+
+## Three separated concerns
+
+1. **Orchestration (Hermes).** Launches workers through adapters, enforces
+   budget and turn limits, checkpoints state to files, messages the user. It is
+   a secretary and process supervisor, not a philosopher-king. Its own model
+   never has the final say on truth.
+2. **Generation (the council).** Multiple providers, each pinned to one role.
+   Diversity is used for coverage (different proof paths, different attacks), not
+   for voting. Workers communicate only through artifacts.
+3. **Judgment (the gate).** A deterministic engine and a proof assistant. This
+   is the only component allowed to grant `proven`. It cannot be flattered.
+
+## Why workers are isolated
+
+If one worker's output is fed to the others as context, a single confident error
+propagates and the models converge on it — correlated failure and consensus
+laundering. Each worker gets the brief and the claim, not the other workers'
+prose. Reconciliation happens in the deterministic engine, from evidence.
+
+## The two-plane ledger
+
+- **Proposal plane** (append-only, attributed): any worker may add a claim,
+  objection, or piece of evidence to its own lane. Nothing is overwritten.
+- **Canonical plane** (the "brain"): the coordinator promotes a claim here only
+  after the gate grants it a status. Every canonical entry carries provenance,
+  the deciding rule, confidence, and a link to any dissent.
+
+This keeps the shared brain trustworthy without making the coordinator an
+infallible oracle: workers propose, the gate disposes, dissent survives.
 
 ## Source repo vs instantiated project
 
-The source repository keeps versioned bootstrap assets under `templates/project/`.
+The source repository holds versioned bootstrap assets under `templates/project/`
+(roles, schema, scripts, control-plane template). An instantiated project stores
+live state under its own `.adversal/`: runs, ledgers, worker status, verdicts.
+Live runtime state is never committed to the source repository.
 
-An instantiated Adversal project stores live runtime state under its own `.adversal/` directory. The source repository should not track live `.adversal/` ledgers, run directories, temporary artifacts, or worker status generated during experiments.
+## Autonomy is safe here because the gate is objective
 
-## Coordinator
-
-The coordinator is the user's selected Hermes profile after it has been configured with the Adversal `SOUL.md`, required toolsets, and required skills. The repository copy of `profiles/hermes-redteam-coordinator/SOUL.md` is only a template until installed into that profile.
-
-## Workers
-
-Workers are executable surfaces, not abstract model endpoints. A worker can be:
-
-- a subscription-native CLI;
-- a local model/tool;
-- a deterministic checker;
-- a metered API route, explicitly approved;
-- a human review step.
-
-## Evidence flow
-
-1. Scenario definition.
-2. Worker execution.
-3. Trace capture.
-4. Deterministic scoring.
-5. Optional verifier/judge for ambiguity.
-6. Ledger update.
-7. Curated wiki update only when accepted.
+A coordinator may loop for many turns without asking the user — generate,
+formalize, check, repair, check — because Lean stops false steps. The bounds are
+budget (max turns/tokens/cost/wall-clock) and explicit escalation triggers
+(irreversible actions, spend threshold, ambiguous goal, non-convergence). In a
+domain without an objective gate this autonomy would manufacture confident
+nonsense; here it cannot promote anything the kernel rejects.

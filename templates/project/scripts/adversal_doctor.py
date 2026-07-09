@@ -32,6 +32,11 @@ WORKERS = {
         "version_args": ["--version"],
         "hazards": ["GOOGLE_API_KEY", "GEMINI_API_KEY", "GOOGLE_APPLICATION_CREDENTIALS"],
     },
+    "grok": {
+        "command": "grok",
+        "version_args": ["--version"],
+        "hazards": ["XAI_API_KEY", "GROK_API_KEY"],
+    },
     "opencode": {
         "command": "opencode",
         "version_args": ["--version"],
@@ -50,6 +55,10 @@ WORKERS = {
 }
 
 PACKAGE_MANAGERS = ["brew", "npm", "pnpm", "yarn", "uv", "pipx", "python3", "git", "gh"]
+
+# The formal-verification gate. Without one of these there is no way to grant
+# 'proven', so the doctor reports it prominently.
+VERIFIERS = ["lake", "lean"]
 
 
 def run_version(command: str, args: list[str]) -> dict:
@@ -105,6 +114,9 @@ def main() -> int:
     for cmd in PACKAGE_MANAGERS:
         report["package_managers"][cmd] = shutil.which(cmd)
 
+    report["verifiers"] = {cmd: shutil.which(cmd) for cmd in VERIFIERS}
+    report["gate_available"] = any(report["verifiers"].values())
+
     for name, spec in WORKERS.items():
         check = run_version(spec["command"], spec["version_args"])
         hazards_present = [var for var in spec["hazards"] if os.getenv(var)]
@@ -124,6 +136,11 @@ def main() -> int:
         print("\nProject markers:")
         for key, value in report["project_markers"].items():
             print(f"  {'OK' if value else '--'} {key}")
+        print("\nFormal-verification gate (required for 'proven'):")
+        for cmd, path in report["verifiers"].items():
+            print(f"  {'OK' if path else '--'} {cmd}")
+        if not report["gate_available"]:
+            print("  !! no Lean toolchain found: nothing can be marked 'proven' until one is installed")
         print("\nWorkers:")
         for name, data in report["workers"].items():
             status = "OK" if data["present"] else "missing"
