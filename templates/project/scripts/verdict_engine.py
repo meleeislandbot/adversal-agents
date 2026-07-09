@@ -168,11 +168,13 @@ def decide(claim_id: str, statement: str, assessments: list[WorkerAssessment],
     dissent = sorted({f"{a.worker}/{a.role}: {a.status_vote}" for a in assessments})
     sycophancy = sum(_count_sycophancy(a.raw_text) for a in assessments)
 
-    # Rule 1 — a specific, evidenced refutation dominates everything.
+    # Rule 1 — a genuine, evidenced refutation dominates everything. It must be an
+    # actual refutation vote or an explicit counterexample; a stray "breaks_at"
+    # left on a non-refuting vote (e.g. a formalizer voting "proven") is ignored.
     for a in assessments:
-        refutes = a.status_vote == STATUS_REFUTED or a.breaks_at
-        has_evidence = any(e.type in ("counterexample", "citation") for e in a.evidence)
-        if refutes and (has_evidence or a.breaks_at):
+        has_counter = any(e.type == "counterexample" for e in a.evidence)
+        is_refutation = a.status_vote == STATUS_REFUTED or has_counter
+        if is_refutation and (has_counter or a.breaks_at):
             ref = a.breaks_at or next((e.detail or e.ref for e in a.evidence
                                        if e.type == "counterexample"), "")
             return ClaimVerdict(claim_id, statement, STATUS_REFUTED,
@@ -338,6 +340,20 @@ def selftest() -> int:
         v = run(root)[0]
         assert v.status == STATUS_REFUTED, v.status
         print(f"[selftest] one evidenced refutation beats five approvals -> {v.status}  OK")
+
+        # Regression: a 'proven' vote carrying a stray breaks_at (e.g. str(None))
+        # and no counterexample must NOT be read as a refutation.
+        for f in (root / "workers").glob("*.json"):
+            f.unlink()
+        (root / "workers" / "formalizer.json").write_text(json.dumps({
+            "claim_id": "C1", "role": "formalizer", "worker": "gpt",
+            "status_vote": "proven", "breaks_at": "None",
+            "evidence": [{"type": "lean", "ref": "lean/missing.lean"}],
+            "raw_text": "compiles"}))
+        v = run(root)[0]
+        assert v.status == STATUS_NOT_ESTABLISHED, v.status
+        assert v.decided_by == "rule4_formal_unverified", v.decided_by
+        print(f"[selftest] proven-vote + junk breaks_at + unverifiable lean -> {v.status}  OK")
     print("[selftest] cold iron holds.")
     return 0 if ok else 1
 

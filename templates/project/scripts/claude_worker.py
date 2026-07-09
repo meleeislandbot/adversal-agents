@@ -126,8 +126,8 @@ def normalize(obj: dict | None, role: str, claim_id: str, raw: str) -> dict:
         "worker": "claude",
         "status_vote": status,
         "evidence": evidence,
-        "breaks_at": str(obj.get("breaks_at", "")),
-        "confidence": float(obj.get("confidence", 0.0) or 0.0),
+        "breaks_at": str(obj.get("breaks_at") or ""),
+        "confidence": float(obj.get("confidence") or 0.0),
         "raw_text": str(obj.get("raw_text", "")) or raw[:6000],
     }
 
