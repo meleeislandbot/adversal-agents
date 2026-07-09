@@ -40,7 +40,7 @@ def main() -> int:
                     help="project root containing .adversal/")
     ap.add_argument("--roles", default=",".join(DEFAULT_ROLES),
                     help="comma-separated council roles to dispatch")
-    ap.add_argument("--timeout", type=int, default=240)
+    ap.add_argument("--timeout", type=int, default=480)
     ap.add_argument("--dry-run", action="store_true",
                     help="run the whole pipeline with no model calls")
     ap.add_argument("--allow-api", action="store_true",

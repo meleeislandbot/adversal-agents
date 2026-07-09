@@ -51,6 +51,25 @@ this monotonicity argument", Hermes:
 5. **Keeps the ledgers** so there is a durable, honest record of what has ever
    been proven vs. merely conjectured.
 
+## Two phases: imagine, then verify
+
+Hard mathematics needs bold, cross-field ideas — but imagination in a model is the
+same faculty as confabulation, so the two are kept separate, never blended.
+
+1. **Ideate (divergent).** `ideate.py --topic "..."` runs the strategist several
+   times with different angles (import a distant field, attack a hidden
+   assumption, reason by analogy, invent a definition) to get a *spread* of bold
+   directions. Each is forced to a precise, falsifiable statement plus a concrete
+   next checkable step. Output is a menu of **unverified directions** — never
+   results, nothing promoted to the brain.
+2. **Verify (convergent).** Hermes (or the researcher) picks a promising
+   direction and runs its next step as a mission (`run_mission.py`), where the
+   formalizer, prior-art auditor, skeptic, and the Lean gate decide.
+
+Be as wild as you like in phase 1; be ruthless in phase 2. The gate is what makes
+wild ideas affordable: you can generate many and let the kernel filter, instead
+of trusting any single one.
+
 ## Bounded autonomy
 
 Hermes may loop without pestering your brother — propose a lemma, formalize,
@@ -64,6 +83,11 @@ Workers default to the **subscription login** (the adapter scrubs API-key
 variables that would force metered billing). Every call's route and notional
 token cost is logged to `.adversal/ledgers/budget.jsonl`. On a Claude Max plan
 this draws from the weekly allowance, not your wallet.
+
+Worker calls inherit the CLI's configured effort/model. At high effort a single
+strategist call can run several minutes and use heavy tokens, so a wide ideation
+sweep consumes real quota. Tune effort down for generation; reserve high effort
+for hard formalization.
 
 ## Setup: molding the profile (your plan is correct)
 

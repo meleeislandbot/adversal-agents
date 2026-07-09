@@ -2,6 +2,26 @@
 
 This project follows [Semantic Versioning](https://semver.org/) and uses Conventional Commits.
 
+## [0.3.0] - 2026-07-09
+
+### Added
+
+- Divergent ideation mode (`templates/project/scripts/ideate.py`): given a topic,
+  it runs the strategist several times with distinct angle-provocations (import a
+  distant field, attack a hidden assumption, reason by analogy, invent a
+  definition, reformulate, or probe the failure mode) and assembles a menu of
+  bold candidate directions. Every direction is an explicitly unverified
+  conjecture with a concrete next checkable step — never a result.
+- `--suffix` option on `claude_worker.py` so one role can produce many samples.
+
+### Changed
+
+- Reframed the strategist role (`templates/project/roles/strategist.md`) as an
+  imaginative divergent generator held to a strict discipline: each idea must be a
+  precise falsifiable statement plus the next checkable step, capped at
+  `conjecture`, with no self-congratulation. Imagination up front, iron at the
+  gate.
+
 ## [0.2.1] - 2026-07-09
 
 ### Changed

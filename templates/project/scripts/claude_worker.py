@@ -95,7 +95,8 @@ def extract_json(text: str) -> dict | None:
 
 
 FAILURE_MARKERS = ("not logged in", "please run /login", "invalid authentication",
-                   "401", "authentication_error", "api error", "rate limit")
+                   "401", "authentication_error", "api error", "rate limit",
+                   "worker timed out")
 
 
 def looks_like_failure(text: str) -> bool:
@@ -119,10 +120,15 @@ def call_claude(prompt: str, cwd: Path, timeout: int,
         for var in BILLING_VARS:
             child_env.pop(var, None)
         route = "subscription-preferred"
-    proc = subprocess.run(
-        ["claude", "-p", prompt, "--output-format", "json"],
-        cwd=str(cwd), env=child_env, text=True, capture_output=True,
-        timeout=timeout, check=False)
+    try:
+        proc = subprocess.run(
+            ["claude", "-p", prompt, "--output-format", "json"],
+            cwd=str(cwd), env=child_env, text=True, capture_output=True,
+            timeout=timeout, check=False)
+    except subprocess.TimeoutExpired:
+        # A slow call is a worker that could not run, not a crash and not a
+        # judgment. Fail cleanly so the caller records it and moves on.
+        return (f"worker timed out after {timeout}s", 0.0, route)
     out = (proc.stdout or "").strip()
     text, cost = out or (proc.stderr or ""), 0.0
     try:  # `--output-format json` wraps the reply as {"result": "...", ...}
@@ -180,6 +186,8 @@ def main() -> int:
                     help="write an honest placeholder assessment without calling Claude")
     ap.add_argument("--allow-api", action="store_true",
                     help="allow a metered API route (default scrubs API-key vars to stay on subscription)")
+    ap.add_argument("--suffix", default="",
+                    help="suffix for the output filename, e.g. -1 (lets one role run many samples)")
     args = ap.parse_args()
 
     (args.run / "workers").mkdir(parents=True, exist_ok=True)
@@ -216,7 +224,7 @@ def main() -> int:
             lean_path.write_text(str(parsed["lean_source"]), encoding="utf-8")
             obj["evidence"] = [{"type": "lean", "ref": f"lean/{args.claim_id}.lean"}]
 
-    out_path = args.run / "workers" / f"claude-{args.role}.json"
+    out_path = args.run / "workers" / f"claude-{args.role}{args.suffix}.json"
     out_path.write_text(json.dumps(obj, indent=2), encoding="utf-8")
     print(out_path)
     return 2 if failed else 0
