@@ -54,6 +54,9 @@ def main() -> int:
                     help="per-sample seconds; strategist reasoning can be slow at high effort")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--allow-api", action="store_true")
+    ap.add_argument("--audit", action="store_true",
+                    help="run the prior-art auditor on each direction to tag known vs off-map "
+                         "(one extra worker call per direction)")
     args = ap.parse_args()
 
     n = max(1, min(args.n, 12))
@@ -82,14 +85,52 @@ def main() -> int:
         if result.returncode == 2:
             print(f"  ! sample {i + 1} could not run (see stderr)", file=sys.stderr)
 
-    ideas = [json.loads(jf.read_text(encoding="utf-8"))
-             for jf in sorted((run / "workers").glob("claude-strategist-*.json"))]
+    def num(p: Path) -> int:
+        try:
+            return int(p.stem.split("-")[-1])
+        except ValueError:
+            return 0
+
+    strat_files = sorted((run / "workers").glob("claude-strategist-*.json"), key=num)
+
+    # Optional novelty axis: ask the prior-art auditor whether each direction is
+    # already a known program in the literature. This does NOT judge truth (the
+    # gate does that) — it only separates recall from off-the-map recombination.
+    if args.audit:
+        for jf in strat_files:
+            direction = (json.loads(jf.read_text(encoding="utf-8")).get("raw_text") or "").strip()
+            if not direction:
+                continue
+            cmd = [sys.executable, str(SCRIPTS / "claude_worker.py"),
+                   "--role", "prior-art-auditor", "--run", str(run),
+                   "--claim-id", f"idea-{num(jf)}", "--suffix", f"-{num(jf)}",
+                   "--statement", "Is this proposed research direction already a known program "
+                   "in the literature? Name and cite it if so:\n\n" + direction,
+                   "--timeout", str(args.timeout)]
+            if args.allow_api:
+                cmd.append("--allow-api")
+            subprocess.run(cmd, check=False)
+
     lines = [f"# Ideation — {args.topic}", "",
              "> These are UNVERIFIED directions, not results. Most will be wrong.",
              "> Each is only worth anything once its next checkable step is verified.",
              "> Nothing here enters the knowledge base until the gate certifies it.", ""]
-    for idx, d in enumerate(ideas, 1):
+    if args.audit:
+        lines.append("> Novelty tags say only whether a direction is *already known*, not whether "
+                     "it is *true*. Truth is the gate's job, on the next checkable step.\n")
+    for idx, jf in enumerate(strat_files, 1):
+        d = json.loads(jf.read_text(encoding="utf-8"))
         lines.append(f"## Direction {idx}  ·  status: `{d.get('status_vote', '?')}`")
+        pa = run / "workers" / f"claude-prior-art-auditor-{num(jf)}.json"
+        if args.audit and pa.exists():
+            a = json.loads(pa.read_text(encoding="utf-8"))
+            if a.get("status_vote") == "known":
+                cite = next((e.get("ref", "") for e in a.get("evidence", [])
+                             if e.get("type") == "citation"), "")
+                lines.append(f"**Novelty: KNOWN** — already in the literature: {cite or 'cited'}")
+            else:
+                lines.append("**Novelty: no prior art found** — may be genuinely off-map, or "
+                             "incoherent; only verification tells which.")
         lines.append((d.get("raw_text") or "").strip() or "(no content)")
         lines.append("")
     (run / "ideas.md").write_text("\n".join(lines), encoding="utf-8")

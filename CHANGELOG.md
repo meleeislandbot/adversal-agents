@@ -2,6 +2,16 @@
 
 This project follows [Semantic Versioning](https://semver.org/) and uses Conventional Commits.
 
+## [0.3.1] - 2026-07-09
+
+### Added
+
+- `ideate.py --audit`: runs the prior-art auditor on each generated direction and
+  tags it in `ideas.md` as `KNOWN` (with citation) or `no prior art found`. This
+  measures the *novelty* axis — is a direction already a named program? — which is
+  separate from the *truth* axis the gate checks. It stops recall from being
+  mistaken for invention. Opt-in, since it adds one worker call per direction.
+
 ## [0.3.0] - 2026-07-09
 
 ### Added

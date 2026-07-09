@@ -70,6 +70,12 @@ Be as wild as you like in phase 1; be ruthless in phase 2. The gate is what make
 wild ideas affordable: you can generate many and let the kernel filter, instead
 of trusting any single one.
 
+Two independent axes matter, and they are checked separately. **Novelty** — is a
+direction already a known program? — is measured by `ideate.py --audit` (the
+prior-art auditor). **Truth** — does the next step actually hold? — is measured by
+the gate. A direction can be novel and false, known and true, or any mix; only
+verifying both tells you which. Generation alone tells you neither.
+
 ## Bounded autonomy
 
 Hermes may loop without pestering your brother — propose a lemma, formalize,
