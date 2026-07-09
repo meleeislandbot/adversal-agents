@@ -44,6 +44,10 @@ The gate is what makes everything else safe, so it cannot be last.
 
 - [x] Mission brief + run-directory generator and end-to-end runner
       (`run_mission.py`): claim -> roles -> gate -> ledgers, with a `--dry-run`.
+- [x] Divergent ideation (`ideate.py`): many bold directions per topic from the
+      strategist, each an unverified conjecture + a concrete next checkable step,
+      to feed the verification loop. Diversity via independent samples + distinct
+      angles today; multi-model diversity once other adapters land.
 - [x] Honest run report: proven / known / refuted / not_established counts.
 - [x] Decisions and budget ledgers written per run (subscription route + notional
       cost logged); canonical-brain promotion via the gate still pending.
