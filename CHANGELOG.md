@@ -11,8 +11,8 @@ This project follows [Semantic Versioning](https://semver.org/) and uses Convent
 - Agent-facing guided setup procedure in `instructions.md`, scoped as one-shot onboarding.
 - Cross-agent context files: `.hermes.md`, `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` for day-to-day work, separated from one-shot onboarding.
 - Dedicated Hermes coordinator profile template at `profiles/hermes-redteam-coordinator/SOUL.md`, documented as inert until installed/copied into the selected Hermes profile.
-- Project-local `.adversal/` control plane with scenarios, ledgers, workers, and templates.
-- Read-only diagnostic helper: `scripts/adversal_doctor.py`.
-- Run skeleton helper: `scripts/create_run_skeleton.py`.
+- Project bootstrap template at `templates/project/.adversal/` with scenarios, ledgers, workers, and templates.
+- Read-only diagnostic helper template: `templates/project/scripts/adversal_doctor.py`.
+- Run skeleton helper template: `templates/project/scripts/create_run_skeleton.py`.
 - Initial red-team research wiki under `llm-wiki/`.
 - Professional maintenance docs and validation workflow.

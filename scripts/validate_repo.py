@@ -25,9 +25,9 @@ REQUIRED_FILES = [
     "GEMINI.md",
     ".hermes.md",
     "profiles/hermes-redteam-coordinator/SOUL.md",
-    ".adversal/project.yaml",
-    "scripts/adversal_doctor.py",
-    "scripts/create_run_skeleton.py",
+    "templates/project/.adversal/project.yaml",
+    "templates/project/scripts/adversal_doctor.py",
+    "templates/project/scripts/create_run_skeleton.py",
 ]
 
 PROMPT_START = "<!-- adversal-setup-prompt:start -->"
@@ -41,6 +41,17 @@ EXAMPLE_SECRET_VALUES = ("redacted", "your-", "example", "placeholder", "changem
 def fail(msg: str) -> None:
     print(f"FAIL: {msg}")
     raise SystemExit(1)
+
+
+def git_files(*pathspecs: str) -> list[str]:
+    proc = subprocess.run(
+        ["git", "ls-files", *pathspecs],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    return [line for line in proc.stdout.splitlines() if line]
 
 
 def check_required_files() -> None:
@@ -70,13 +81,14 @@ def check_context_files_do_not_trigger_onboarding() -> None:
 
 
 def check_python_syntax() -> None:
-    for path in sorted((ROOT / "scripts").glob("*.py")):
+    for rel in sorted(git_files("*.py")):
+        path = ROOT / rel
         ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
 
 
-def check_doctor_runs() -> None:
+def check_template_doctor_runs() -> None:
     subprocess.run(
-        [sys.executable, "scripts/adversal_doctor.py", "--json"],
+        [sys.executable, "templates/project/scripts/adversal_doctor.py", "--json"],
         cwd=ROOT,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
@@ -91,35 +103,31 @@ def check_yaml_if_available() -> None:
         import yaml  # type: ignore
     except Exception:
         return
-    with (ROOT / ".adversal/project.yaml").open("r", encoding="utf-8") as fh:
+    with (ROOT / "templates/project/.adversal/project.yaml").open("r", encoding="utf-8") as fh:
         data = yaml.safe_load(fh)
     if not isinstance(data, dict) or data.get("schema_version") is None:
-        fail(".adversal/project.yaml did not parse as expected")
+        fail("templates/project/.adversal/project.yaml did not parse as expected")
 
 
-def check_no_generated_runs_tracked() -> None:
-    proc = subprocess.run(
-        ["git", "ls-files", ".adversal/runs"],
-        cwd=ROOT,
-        text=True,
-        capture_output=True,
-        check=True,
-    )
-    tracked = [line for line in proc.stdout.splitlines() if line and not line.endswith(".gitkeep")]
+def check_runtime_state_not_tracked_at_repo_root() -> None:
+    tracked = git_files(".adversal")
     if tracked:
-        fail(f"generated run artifacts are tracked: {tracked}")
+        fail(f"repo-root runtime .adversal files are tracked; use templates/project instead: {tracked}")
+
+
+def check_no_generated_template_runs_tracked() -> None:
+    tracked = [
+        line
+        for line in git_files("templates/project/.adversal/runs")
+        if line and not line.endswith(".gitkeep")
+    ]
+    if tracked:
+        fail(f"generated template run artifacts are tracked: {tracked}")
 
 
 def check_no_obvious_secrets() -> None:
-    proc = subprocess.run(
-        ["git", "ls-files"],
-        cwd=ROOT,
-        text=True,
-        capture_output=True,
-        check=True,
-    )
     offenders: list[str] = []
-    for rel in proc.stdout.splitlines():
+    for rel in git_files():
         path = ROOT / rel
         if not path.is_file() or path.stat().st_size > 500_000:
             continue
@@ -142,9 +150,10 @@ def main() -> int:
     check_setup_prompt()
     check_context_files_do_not_trigger_onboarding()
     check_python_syntax()
-    check_doctor_runs()
+    check_template_doctor_runs()
     check_yaml_if_available()
-    check_no_generated_runs_tracked()
+    check_runtime_state_not_tracked_at_repo_root()
+    check_no_generated_template_runs_tracked()
     check_no_obvious_secrets()
     print("validate_repo_ok")
     return 0

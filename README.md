@@ -38,15 +38,11 @@ GEMINI.md                 # Gemini CLI day-to-day entrypoint
 .hermes.md                # Hermes project context
 instructions.md           # one-time guided setup procedure for onboarding agents
 profiles/                 # Hermes coordinator SOUL.md template; inert until installed/copied
-.adversal/                # project-local control plane
-  project.yaml            # manifest and policy defaults
-  scenarios/              # red-team scenario registry
-  ledgers/                # claims, objections, decisions, budget records
-  workers/                # worker catalog and readiness status
-  templates/              # run/report/status templates
-  runs/                   # generated run traces, ignored by git except .gitkeep
+templates/project/        # assets to copy into an instantiated Adversal project
+  .adversal/              # project-local control plane template
+  scripts/                # optional project-local helpers
 llm-wiki/                 # curated research wiki and source notes
-scripts/                  # read-only diagnostics and small setup helpers
+scripts/                  # source-repo validation only
 docs/                     # architecture, maintenance, release, and profile docs
 ```
 
@@ -54,7 +50,7 @@ docs/                     # architecture, maintenance, release, and profile docs
 
 - **Agent-first one-shot setup**, not manual installation docs.
 - **Guided flow**, not a giant final error report.
-- **Project-local state** in `.adversal/`; avoid hidden chat memory as the source of truth.
+- **Project-local state** in `.adversal/` after setup; the source repo keeps only templates under `templates/project/`.
 - **Subscription/local first**; metered APIs require explicit approval.
 - **Deterministic scoring first**; LLM judges only for ambiguity.
 - **Trace everything**: prompts, tool calls, outputs, verdicts, budget and auth route.

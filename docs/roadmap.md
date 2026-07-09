@@ -4,7 +4,7 @@
 
 - [x] Agent-facing guided setup instructions.
 - [x] Single human copy/paste prompt embedded visibly in `README.md`.
-- [x] Project-local `.adversal/` control plane.
+- [x] Project bootstrap template for the `.adversal/` control plane.
 - [x] Initial safe scenario registry.
 - [x] Read-only environment diagnostic helper.
 - [x] Cost and auth-route policy.
@@ -17,6 +17,7 @@
 - [x] Add versioning, changelog, contribution, security, and release-process docs.
 - [x] Add repository validation script and GitHub Actions workflow.
 - [x] Add branch protection once the first validation workflow has run successfully.
+- [x] Separate source-repo assets from instantiated project runtime state.
 
 ## Phase 2 — Worker adapters
 

@@ -1,15 +1,15 @@
 # Architecture
 
-Adversal Agents is a project-local orchestration pattern for red-teaming AI agents.
+Adversal Agents is a source repository for configuring project-local orchestration patterns for red-teaming AI agents.
 
 ```text
-user's active agent/profile
+configured Hermes coordinator profile
         |
         v
-project root with .hermes.md / AGENTS.md / CLAUDE.md / GEMINI.md
+target project root with .hermes.md / AGENTS.md / CLAUDE.md / GEMINI.md
         |
         v
-.adversal control plane
+.adversal control plane copied from templates/project/.adversal/
         |
         +--> worker backends: Claude Code, Codex CLI, Gemini, OpenCode, local models, deterministic tools
         |
@@ -19,9 +19,15 @@ project root with .hermes.md / AGENTS.md / CLAUDE.md / GEMINI.md
 curated llm-wiki
 ```
 
+## Source repo vs instantiated project
+
+The source repository keeps versioned bootstrap assets under `templates/project/`.
+
+An instantiated Adversal project stores live runtime state under its own `.adversal/` directory. The source repository should not track live `.adversal/` ledgers, run directories, temporary artifacts, or worker status generated during experiments.
+
 ## Coordinator
 
-The coordinator is whichever agent the user opens in the repo. No special central profile is required.
+The coordinator is the user's selected Hermes profile after it has been configured with the Adversal `SOUL.md`, required toolsets, and required skills. The repository copy of `profiles/hermes-redteam-coordinator/SOUL.md` is only a template until installed into that profile.
 
 ## Workers
 

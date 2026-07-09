@@ -186,7 +186,15 @@ Recommended relationship:
 
 ### Phase 4 — Project-local structure
 
-Check for and create missing project-local structure:
+Check for project-local structure. If this repository or a partial checkout is locally available, copy only the bootstrap assets from:
+
+```text
+templates/project/
+```
+
+into the selected project root. Do not clone or copy the whole source repository just to get runtime state.
+
+If the template is not available, create the same structure manually:
 
 ```text
 .adversal/
@@ -211,7 +219,7 @@ Create missing ledger files without overwriting existing ones:
 
 If `llm-wiki/` is missing, create only a minimal `llm-wiki/index.md` and explain that research context can be added later. The directory is useful only if the Hermes coordinator profile has the `llm-wiki` skill installed/enabled.
 
-Do not clone this entire repository just to get structure. If useful, fetch or copy only specific assets/templates.
+The source repository stores template state under `templates/project/.adversal/`; instantiated projects store live state under `.adversal/`.
 
 ### Phase 5 — Ask for worker/provider choices
 
@@ -405,10 +413,10 @@ Keep it short. The detailed record belongs in `.adversal/`.
 
 ## Optional command helpers
 
-If this repository or its helper assets are locally available, you may use the read-only helper:
+If this repository's project template has been copied into the target project root, you may use the read-only helper:
 
 ```bash
 python3 scripts/adversal_doctor.py --json
 ```
 
-Do not assume this script exists when reading these instructions remotely from GitHub. Use it as a supplement, not as a replacement for guided setup. If it reveals a blocking issue, stop at that point and guide the user.
+In the source repository, the helper lives at `templates/project/scripts/adversal_doctor.py`. Do not assume `scripts/adversal_doctor.py` exists when reading these instructions remotely from GitHub. Use it as a supplement, not as a replacement for guided setup. If it reveals a blocking issue, stop at that point and guide the user.

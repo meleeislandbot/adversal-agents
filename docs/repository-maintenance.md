@@ -29,9 +29,11 @@ Validation checks:
 
 - exactly one setup prompt exists visibly in `README.md`;
 - required context files exist;
-- Python helper scripts parse and execute basic diagnostics;
-- project manifest parses as YAML when PyYAML is available;
-- no generated run artifacts are staged;
+- source-repo Python scripts and project-template helper scripts parse;
+- the project-template diagnostic helper executes basic diagnostics;
+- project-template manifest parses as YAML when PyYAML is available;
+- no live repo-root `.adversal/` runtime state is tracked;
+- no generated template run artifacts are staged;
 - no common secret-looking assignments are staged.
 
 ## Context file policy
@@ -42,7 +44,14 @@ Validation checks:
 - `.hermes.md`: Hermes project context.
 - `profiles/hermes-redteam-coordinator/SOUL.md`: coordinator profile template; inert until copied into the selected Hermes profile.
 
-Keep context files concise and route normal agents to `.adversal/project.yaml` and `llm-wiki/index.md`. `instructions.md` is only for one-shot onboarding triggered by the README prompt.
+Keep context files concise and route normal agents to the target project's `.adversal/project.yaml` and `llm-wiki/index.md`. In this source repository, versioned bootstrap assets live under `templates/project/`; `instructions.md` is only for one-shot onboarding triggered by the README prompt.
+
+## Template policy
+
+- `templates/project/.adversal/`: versioned bootstrap control-plane seed for target projects.
+- `templates/project/scripts/`: optional helpers copied into target projects.
+- repo-root `.adversal/`: ignored local runtime state only; do not commit it.
+- repo-root `scripts/`: source-repository maintenance/validation only.
 
 ## Wiki policy
 
