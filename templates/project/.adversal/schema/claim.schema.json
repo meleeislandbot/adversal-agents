@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Council worker claim assessment",
+  "description": "One worker's structured assessment of one mathematical claim. Consumed by verdict_engine.py.",
+  "type": "object",
+  "required": ["claim_id", "role", "worker", "status_vote"],
+  "additionalProperties": false,
+  "properties": {
+    "claim_id": {"type": "string"},
+    "role": {"enum": ["strategist", "formalizer", "prior-art-auditor", "skeptic"]},
+    "worker": {"type": "string", "description": "provider that produced this: claude, gpt, gemini, grok, hermes, ..."},
+    "status_vote": {"enum": ["proven", "known", "refuted", "conjecture", "sketch", "not_established"]},
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "additionalProperties": false,
+        "properties": {
+          "type": {"enum": ["lean", "citation", "counterexample", "argument"]},
+          "ref": {"type": "string", "description": "file path (lean), DOI/URL/theorem name (citation), else empty"},
+          "detail": {"type": "string"},
+          "verified": {"type": "boolean", "description": "only true after an actual check; never self-asserted"}
+        }
+      }
+    },
+    "breaks_at": {"type": "string", "description": "the first failing step, if any"},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1, "description": "recorded but given no weight without evidence"},
+    "raw_text": {"type": "string"}
+  }
+}

@@ -1,35 +1,78 @@
 # Adversal Agents
 
-Portable, agent-guided setup for red-teaming AI agents with multiple provider CLIs, local tools, reproducible traces, and cost controls.
+A cold-iron mathematical verification council. It coordinates several AI models
+(Claude, GPT, Gemini, Grok, ...) through a Hermes coordinator to work on a
+mathematical goal — but it is built so that no model, and no chorus of models,
+can ever tell you something is proven when it is not.
 
-The project assumes there will be a **Hermes coordinator profile**, but the repository cannot activate that profile by itself. The template at `profiles/hermes-redteam-coordinator/SOUL.md` only has effect after it is copied into the selected Hermes profile or installed by a setup step.
+The adversary here is aimed inward: a dedicated skeptic attacks *your own*
+claims, and every "proven" must survive a proof-assistant kernel, not a vote.
 
-## Project objective
+## The problem it solves
 
-The long-term goal is to build a practical red-team lab for autonomous AI agents: a system where a Hermes coordinator can orchestrate a council of independent worker CLIs, run adversarial scenarios against agentic systems, capture every trace, compare dissenting judgments, and turn failures into reusable regressions.
+Working a hard problem with one AI, you get flattered: "brilliant", "you're
+close", "this is essentially done". Adding more models does not fix it — they
+share training data and the same instinct to agree, so five approvals are one
+bias repeated five times. This system refuses to treat agreement as truth.
 
-The ideal version is not just a prompt collection or benchmark wrapper. It is a portable, auditable operating model for agent safety work:
+Concretely, it replaces the exhausting manual loop of pasting one model's answer
+into another model to check it. The coordinator runs that loop for you, assigns
+each model an adversarial role, and gates every result on evidence a model
+cannot fake.
 
-- one guided setup flow that configures an existing coordinator profile and a chosen project root;
-- multiple workers with different strengths, costs, and failure modes, coordinated through files rather than hidden chat state;
-- scenario definitions, traces, ledgers, verdicts, objections, and budget records that survive beyond a single conversation;
-- deterministic checks first, with LLM judgment used only where ambiguity actually requires it;
-- subscription-native and local tools preferred by default, so research does not accidentally become API bill shock;
-- a curated `llm-wiki/` that preserves evidence, methodology, open questions, and lessons from prior runs.
+## What it honestly can and cannot do
 
-The destination is a reproducible adversarial evaluation workflow: given a target agent, the system should help generate attacks, run them safely, verify outcomes, preserve dissent, measure regressions over time, and make the next test better than the last one.
+- It **will not** prove the Riemann Hypothesis, and neither will any council of
+  today's models. Point it at tractable, checkable pieces first.
+- It **will** formalize and verify individual lemmas in Lean.
+- It **will** tell you, with a specific broken step, when an argument fails.
+- It **will** catch a re-proof of a known theorem dressed up as new work.
+- Its most valuable output is negative: it stops you believing a proof that
+  isn't there. See [`docs/epistemics.md`](docs/epistemics.md).
 
-## Quick start for humans
-
-Repository:
+## How it works
 
 ```text
-https://github.com/meleeislandbot/adversal-agents
+Hermes coordinator (process + protocol, NOT the arbiter of truth)
+      | writes a mission brief and the claims under test
+      v
+Council workers, each with ONE role, isolated (no cross-talk):
+  strategist        -> proposes lemmas/reductions        (max status: conjecture)
+  formalizer        -> writes Lean; kernel decides        (only path to proven)
+  prior-art-auditor -> "is this already known?" + cite    (demotes to known)
+  skeptic           -> finds the first broken step        (refutes; never praises)
+      | each writes a structured JSON assessment
+      v
+Deterministic verdict engine  (scripts/verdict_engine.py)
+  applies the cold-iron rules; consensus never grants "proven"
+      v
+Honest verdict + append-only ledger of what is actually proven vs conjectured
 ```
 
-Copy the prompt below and paste it into the agent you want to use for the one-time setup.
+The gate is real and runs today with no paid API:
 
-## One-shot onboarding prompt
+```bash
+python3 templates/project/scripts/verdict_engine.py --selftest
+```
+
+It demonstrates that five workers at 0.99 confidence, praising loudly, still
+produce `not_established` — and that one evidenced refutation beats them all.
+
+## Roles and contract
+
+Worker role prompts live in [`templates/project/roles/`](templates/project/roles/).
+Every worker emits the JSON in
+[`claim.schema.json`](templates/project/.adversal/schema/claim.schema.json). The
+coordinator profile template is in
+[`profiles/hermes-verification-coordinator/SOUL.md`](profiles/hermes-verification-coordinator/SOUL.md);
+it is inert until copied into a Hermes profile.
+
+## Quick start
+
+Paste the prompt below into the agent you want to use for the one-time setup. It
+configures a verification coordinator profile, installs the Lean gate, verifies
+your paid worker CLIs, and runs the machine-validation missions before any real
+mathematics.
 
 <!-- adversal-setup-prompt:start -->
 ```text
@@ -40,70 +83,9 @@ Ask me only when the instructions tell you to.
 ```
 <!-- adversal-setup-prompt:end -->
 
-## After onboarding
+## Status
 
-Once setup is complete, normal agents should use the project context files and **should not re-run onboarding** unless the user explicitly asks to set up a new environment.
-
-## What this repo provides
-
-```text
-AGENTS.md                 # shared day-to-day project instructions for agents that support it
-CLAUDE.md                 # Claude Code day-to-day entrypoint
-GEMINI.md                 # Gemini CLI day-to-day entrypoint
-.hermes.md                # Hermes project context
-instructions.md           # one-time guided setup procedure for onboarding agents
-profiles/                 # Hermes coordinator SOUL.md template; inert until installed/copied
-templates/project/        # assets to copy into an instantiated Adversal project
-  .adversal/              # project-local control plane template
-  scripts/                # optional project-local helpers
-llm-wiki/                 # curated research wiki and source notes
-scripts/                  # source-repo validation only
-docs/                     # architecture, maintenance, release, and profile docs
-```
-
-## Design principles
-
-- **Agent-first one-shot setup**, not manual installation docs.
-- **Guided flow**, not a giant final error report.
-- **Project-local state** in `.adversal/` after setup; the source repo keeps only templates under `templates/project/`.
-- **Subscription/local first**; metered APIs require explicit approval.
-- **Deterministic scoring first**; LLM judges only for ambiguity.
-- **Trace everything**: prompts, tool calls, outputs, verdicts, budget and auth route.
-- **Provider CLIs are workers**, not coordinator profiles.
-- **Professional maintenance**: versioned, reviewed, validated, and release-managed.
-
-## Safety and cost policy
-
-By default, setup must not:
-
-- use paid/metered APIs;
-- write API keys or secrets;
-- modify global configs;
-- run `sudo`;
-- install background services;
-- perform real external side effects;
-- overwrite existing project files.
-
-The agent may create missing project-local folders/files and run read-only diagnostics without interrupting the user.
-
-## Professional maintenance
-
-This repository uses:
-
-- Semantic Versioning via `VERSION`;
-- release history in `CHANGELOG.md`;
-- Conventional Commits;
-- branch + pull request workflow for non-trivial changes;
-- repository validation via `make validate`;
-- GitHub Actions validation on pushes and pull requests.
-
-See:
-
-- `CONTRIBUTING.md`
-- `docs/repository-maintenance.md`
-- `docs/release-process.md`
-- `docs/hermes-coordinator-profile.md`
-
-## Current status
-
-This is an early project scaffold. The existing `llm-wiki/` contains the research foundation for agent red teaming, benchmarks, threat surfaces, worker architecture, and cost-aware orchestration.
+Early. The deterministic gate, role prompts, epistemic contract, and control
+plane are in place. The live provider adapters and Lean integration are the next
+build (see [`docs/roadmap.md`](docs/roadmap.md)). The `llm-wiki/` still contains
+research from the project's earlier red-team framing; treat it as background.

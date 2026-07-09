@@ -1,52 +1,48 @@
 # Roadmap
 
-## Phase 1 — Bootstrap scaffold
+The order is deliberate: build the truth gate first, then generation around it.
+The gate is what makes everything else safe, so it cannot be last.
 
-- [x] Agent-facing guided setup instructions.
-- [x] Single human copy/paste prompt embedded visibly in `README.md`.
-- [x] Project bootstrap template for the `.adversal/` control plane.
-- [x] Initial safe scenario registry.
-- [x] Read-only environment diagnostic helper.
-- [x] Cost and auth-route policy.
+## Phase 1 — The gate and the contract (done)
 
-## Phase 0.5 — Repository professionalism
+- [x] Epistemic contract: the allowed statuses and the cold-iron rules
+      (`docs/epistemics.md`).
+- [x] Deterministic verdict engine that enforces them with no LLM
+      (`templates/project/scripts/verdict_engine.py`), with a self-test proving
+      it cannot be flattered.
+- [x] Adversarial role prompts: strategist, formalizer, prior-art auditor,
+      skeptic (`templates/project/roles/`).
+- [x] Worker output schema (`claim.schema.json`).
+- [x] Two-plane control-plane template under `.adversal/`.
 
-- [x] Add `CLAUDE.md` for Claude Code compatibility.
-- [x] Add `GEMINI.md` for Gemini CLI default context discovery.
-- [x] Add Hermes coordinator `SOUL.md` template.
-- [x] Add versioning, changelog, contribution, security, and release-process docs.
-- [x] Add repository validation script and GitHub Actions workflow.
-- [x] Add branch protection once the first validation workflow has run successfully.
-- [x] Separate source-repo assets from instantiated project runtime state.
+## Phase 2 — Formal verification integration
 
-## Phase 2 — Worker adapters
+- [ ] Lean 4 + mathlib project scaffold generated per run.
+- [ ] Formalizer worker writes `.lean` files; engine runs `lake build` and
+      records the true result.
+- [ ] Treat `sorry`/`admit`/added-axiom as failure automatically.
+- [ ] Cache verified lemmas so re-checks are cheap.
 
-- [ ] Claude Code one-shot adapter with environment scrubbing.
-- [ ] Codex CLI one-shot adapter with sandbox/output capture.
-- [ ] Gemini CLI adapter with verified auth route.
-- [ ] OpenCode adapter with explicit provider/cost config.
-- [ ] Ollama/local-model adapter for cheap mutation/classification.
-- [ ] Deterministic scorer adapter.
+## Phase 3 — Provider adapters (remove the human messenger)
 
-## Phase 3 — Red-team harness
+- [ ] One-shot adapter per provider CLI (Claude Code, Codex, Gemini, Grok/other,
+      OpenCode), each: takes a role + brief, returns schema-valid JSON.
+- [ ] Output normalization: force heterogeneous CLIs into the claim schema.
+- [ ] Auth-route and cost detection per provider; budget ledger entries.
+- [ ] Capability routing: send formalization to the strongest Lean model, ideas
+      to others, mechanical work to a cheap/local model.
 
-- [ ] Scenario schema validator.
-- [ ] Run directory generator with trace manifest.
-- [ ] Deterministic postcondition checks.
-- [ ] Budget ledger writer.
-- [ ] Worker status updater.
-- [ ] Regression suite runner.
+## Phase 4 — Coordinator loop
 
-## Phase 4 — Council workflow
+- [ ] Mission brief format and run-directory generator.
+- [ ] Bounded autonomous loop: generate -> formalize -> check -> repair, with
+      hard budget and escalation triggers.
+- [ ] Two-plane ledger writer and canonical-brain promotion via the gate only.
+- [ ] Honest run report: proven / known / refuted / not_established counts.
 
-- [ ] Attacker / target / verifier / curator role prompts.
-- [ ] Claims, objections, and decisions ledger tooling.
-- [ ] Cross-worker trace comparison.
-- [ ] Wiki proposal and curation flow.
+## Phase 5 — Researcher experience
 
-## Phase 5 — Packaging
-
-- [ ] `adversal init` helper.
-- [ ] `adversal doctor` command wrapper.
-- [ ] Install-free script mode.
-- [ ] Optional Python package or single-binary CLI.
+- [ ] `adversal init` and `adversal run "<claim>"` wrappers.
+- [ ] Validation on a known theorem and on a deliberately-injected error, to
+      prove the machine catches both, before pointing it at open problems.
+- [ ] Long-run resumability and an auditable history of what was ever proven.

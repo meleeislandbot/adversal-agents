@@ -2,7 +2,15 @@
 
 > Content catalog. Every wiki page is listed under its type with a one-line summary.
 > Read this first to find relevant pages for any query.
-> Last updated: 2026-07-06 | Total pages: 30
+> Last updated: 2026-07-09 | Total pages: 31
+
+> **Note (2026-07-09):** the project pivoted from an agent red-team lab to a
+> cold-iron mathematical verification council (see `docs/epistemics.md`). Most
+> pages below are research from the earlier framing — treat them as background,
+> not current objective. The pages that still apply directly are
+> [[multi-agent-verification-failures]], [[memory-and-rag-poisoning]],
+> [[council-protocols-claims-and-objections]], and the new
+> [[cold-iron-verification]].
 
 ## Entities
 
@@ -17,6 +25,7 @@
 - [[agent-safety-benchmarks]] — Benchmark portfolio covering AgentDojo, ToolEmu, AgentHarm, AgentVigil, adaptive IPI attacks, WildTeaming, SafeClawBench, SeClaw, and newer 2026 leads.
 - [[agentic-evaluation-planes]] — Distinguishes semantic, audit-evidence, sandbox harm, concealment, utility preservation, and replayability.
 - [[cli-worker-backends]] — Adapter abstraction for subscription-native CLI workers such as Claude Code, Codex CLI, Gemini CLI, OpenCode, local models, and deterministic tools.
+- [[cold-iron-verification]] — Current project doctrine: model agreement is not truth; a claim is `proven` only via a proof-assistant kernel; the default is `not_established`.
 - [[ai-agent-red-teaming]] — Umbrella synthesis: agent red teaming as whole-system adversarial evaluation, not prompt-only testing.
 - [[council-protocols-claims-and-objections]] — Protocol for independent passes, cross-examination, claim ledgers, objection ledgers, repairs, and evidence-based synthesis.
 - [[declared-project-workspace-and-shared-wiki]] — Project-root architecture where all CLI workers share a curated wiki and auto-loaded context files without total isolation.

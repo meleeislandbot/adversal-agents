@@ -1,43 +1,62 @@
-schema_version: 0.1
+schema_version: 0.2
 kind: adversal_project_template
-purpose: Project-local control plane for AI-agent red-team harnesses.
+purpose: Control plane for a cold-iron mathematical verification council.
 
 coordinator:
   required: hermes_profile
-  rule: "Use the selected Hermes coordinator profile; do not assume this template configures the profile."
+  role: process_and_protocol_only
+  rule: "The coordinator orchestrates and runs the protocol. It never decides truth; the verdict engine and the Lean kernel do."
+
+# The only statuses the system may use about a claim. See docs/epistemics.md.
+statuses:
+  - proven            # kernel-checked Lean artifact
+  - known             # already in the literature; cite it
+  - refuted           # a specific step is false
+  - contested         # evidence-backed disagreement
+  - conjecture        # precise, plausible, unproven
+  - sketch            # informal argument with listed gaps
+  - not_established   # the honest default
+
+gate:
+  formal_verifier: lean4
+  library: mathlib
+  proven_requires: kernel_checked_artifact
+  reject_on: [sorry, admit, added_axiom]
+  default_status: not_established
+
+roles:
+  strategist: { max_status: conjecture, prompt: roles/strategist.md }
+  formalizer: { grants_proven: true, prompt: roles/formalizer.md }
+  prior-art-auditor: { demotes_to: known, prompt: roles/prior-art-auditor.md }
+  skeptic: { can_refute: true, may_praise: false, prompt: roles/skeptic.md }
+
+isolation:
+  workers_see_each_other: false   # prevents correlated failure / consensus laundering
+
+ledger_planes:
+  proposal: append_only_attributed      # any worker may append
+  canonical: coordinator_promotes_via_gate_only
 
 paths:
-  wiki: llm-wiki
   runs: .adversal/runs
   ledgers: .adversal/ledgers
   workers: .adversal/workers
   scenarios: .adversal/scenarios
   artifacts: .adversal/artifacts
-
-setup_policy:
-  mode: guided_incremental
-  read_only_first: true
-  auto_fix_safe_project_local_gaps: true
-  ask_before:
-    - hermes_profile_changes
-    - provider_selection
-    - login_or_device_code
-    - credentials_or_secrets
-    - metered_api_usage
-    - sudo_or_elevated_permissions
-    - global_config_changes
-    - destructive_actions
-    - background_services
-    - external_side_effects
+  schema: .adversal/schema/claim.schema.json
 
 cost_policy:
-  preferred_order:
-    - deterministic
-    - local_tools
-    - local_models
-    - subscription_native_cli
-    - metered_api_explicit_approval_only
+  preferred_order: [deterministic, local_tools, local_models, subscription_native_cli, metered_api_explicit_approval_only]
   record_budget_ledger: true
+
+autonomy:
+  multi_turn_without_user: true
+  stop_and_ask:
+    - budget_limit_exceeded
+    - ambiguous_goal
+    - non_convergence_after_repair_limit
+    - external_or_irreversible_side_effects
+    - credentials_or_metered_api_or_sudo_or_global_config
 
 context_entrypoints:
   hermes: .hermes.md
@@ -47,23 +66,9 @@ context_entrypoints:
   opencode: AGENTS.md
 
 worker_backends:
-  claude_code:
-    command: claude
-    default_route: subscription_native_cli
-    api_key_hazards: [ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN]
-  codex_cli:
-    command: codex
-    default_route: subscription_native_cli_or_configured_auth
-    api_key_hazards: [OPENAI_API_KEY, CODEX_API_KEY]
-  gemini_cli:
-    command: gemini
-    default_route: verify_before_assuming
-    api_key_hazards: [GOOGLE_API_KEY, GEMINI_API_KEY, GOOGLE_APPLICATION_CREDENTIALS]
-  opencode:
-    command: opencode
-    default_route: provider_routed
-    api_key_hazards: []
-  ollama:
-    command: ollama
-    default_route: local
-    api_key_hazards: []
+  claude_code: { command: claude, default_route: subscription_native_cli, api_key_hazards: [ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN] }
+  codex_cli:   { command: codex,  default_route: subscription_native_cli_or_configured_auth, api_key_hazards: [OPENAI_API_KEY, CODEX_API_KEY] }
+  gemini_cli:  { command: gemini, default_route: verify_before_assuming, api_key_hazards: [GOOGLE_API_KEY, GEMINI_API_KEY, GOOGLE_APPLICATION_CREDENTIALS] }
+  grok:        { command: grok,   default_route: verify_before_assuming, api_key_hazards: [XAI_API_KEY, GROK_API_KEY] }
+  opencode:    { command: opencode, default_route: provider_routed, api_key_hazards: [] }
+  ollama:      { command: ollama, default_route: local, api_key_hazards: [] }

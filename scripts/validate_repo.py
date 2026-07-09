@@ -24,7 +24,11 @@ REQUIRED_FILES = [
     "CLAUDE.md",
     "GEMINI.md",
     ".hermes.md",
-    "profiles/hermes-redteam-coordinator/SOUL.md",
+    "profiles/hermes-verification-coordinator/SOUL.md",
+    "docs/epistemics.md",
+    "templates/project/scripts/verdict_engine.py",
+    "templates/project/roles/skeptic.md",
+    "templates/project/.adversal/schema/claim.schema.json",
     "templates/project/.adversal/project.yaml",
     "templates/project/scripts/adversal_doctor.py",
     "templates/project/scripts/create_run_skeleton.py",
@@ -98,6 +102,19 @@ def check_template_doctor_runs() -> None:
     )
 
 
+def check_verdict_engine_selftest() -> None:
+    """The cold-iron guarantee is part of CI: praise never earns a status."""
+    subprocess.run(
+        [sys.executable, "templates/project/scripts/verdict_engine.py", "--selftest"],
+        cwd=ROOT,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=True,
+        timeout=30,
+    )
+
+
 def check_yaml_if_available() -> None:
     try:
         import yaml  # type: ignore
@@ -151,6 +168,7 @@ def main() -> int:
     check_context_files_do_not_trigger_onboarding()
     check_python_syntax()
     check_template_doctor_runs()
+    check_verdict_engine_selftest()
     check_yaml_if_available()
     check_runtime_state_not_tracked_at_repo_root()
     check_no_generated_template_runs_tracked()
