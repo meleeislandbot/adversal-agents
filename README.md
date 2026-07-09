@@ -2,7 +2,7 @@
 
 Portable, agent-guided setup for red-teaming AI agents with multiple provider CLIs, local tools, reproducible traces, and cost controls.
 
-The project is intentionally **profile-agnostic** at the repository level: there is no required official Hermes profile. For serious work, however, we recommend a dedicated Hermes coordinator profile using `profiles/hermes-redteam-coordinator/SOUL.md`.
+The project assumes there will be a **Hermes coordinator profile**, but the repository cannot activate that profile by itself. The template at `profiles/hermes-redteam-coordinator/SOUL.md` only has effect after it is copied into the selected Hermes profile or installed by a setup step.
 
 ## Quick start for humans
 
@@ -34,9 +34,10 @@ Once setup is complete, normal agents should use the project context files and *
 ```text
 AGENTS.md                 # shared day-to-day project instructions for agents that support it
 CLAUDE.md                 # Claude Code day-to-day entrypoint
+GEMINI.md                 # Gemini CLI day-to-day entrypoint
 .hermes.md                # Hermes project context
 instructions.md           # one-time guided setup procedure for onboarding agents
-profiles/                 # optional Hermes coordinator SOUL.md template
+profiles/                 # Hermes coordinator SOUL.md template; inert until installed/copied
 .adversal/                # project-local control plane
   project.yaml            # manifest and policy defaults
   scenarios/              # red-team scenario registry
