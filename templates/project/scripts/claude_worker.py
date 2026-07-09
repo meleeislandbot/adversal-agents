@@ -62,7 +62,9 @@ def build_prompt(role: str, claim_id: str, statement: str,
         formalizer_note = target + (
             '\nIf you formalize the step, also include a top-level key "lean_source" '
             "containing the COMPLETE Lean 4 source (prefer Lean core over mathlib "
-            "when possible). Do not include `sorry` or `admit`.\n")
+            "when possible). Do not include `sorry` or `admit`. The adapter will "
+            "write and build this string; do not try to create a file and do not "
+            "refuse merely because you have no filesystem or shell tools.\n")
     return f"""{role_prompt}
 
 --- CLAIM UNDER TEST ---
@@ -159,9 +161,15 @@ def call_claude(prompt: str, cwd: Path, timeout: int,
 def record_budget(run: Path, role: str, claim_id: str, route: str, cost: float) -> None:
     """Log each call's route and notional cost so usage is auditable."""
     entry = {
-        "ts": datetime.now(timezone.utc).isoformat(),
-        "worker": "claude", "role": role, "claim_id": claim_id,
-        "route": route, "notional_cost_usd": round(cost, 6),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "event": "worker_check",
+        "worker": "claude-code",
+        "auth_route": "subscription" if route.startswith("subscription-") else "api-key",
+        "cost_risk": "low" if route.startswith("subscription-") else "high",
+        "role": role,
+        "claim_id": claim_id,
+        "notional_cost_usd": round(cost, 6),
+        "notes": "Notional token cost is usage telemetry; subscription calls are quota usage, not a dollar charge.",
     }
     with (run / "budget.jsonl").open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(entry) + "\n")

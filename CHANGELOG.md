@@ -30,6 +30,11 @@ This project follows [Semantic Versioning](https://semver.org/) and uses Convent
 ### Fixed
 
 - `ideate.py --audit --dry-run` no longer performs real auditor calls.
+- Tool-less formalizers are now told to return Lean source in JSON for the
+  adapter to persist and build; they are no longer instructed to write directly
+  into a run directory they cannot access.
+- Claude budget entries now follow the documented auth-route and cost-risk
+  ledger schema.
 
 ## [0.3.1] - 2026-07-09
 
