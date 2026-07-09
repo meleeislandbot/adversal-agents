@@ -167,7 +167,8 @@ def record_budget(run: Path, role: str, claim_id: str, route: str, cost: float) 
         fh.write(json.dumps(entry) + "\n")
 
 
-def normalize(obj: dict | None, role: str, claim_id: str, raw: str) -> dict:
+def normalize(obj: dict | None, role: str, claim_id: str, raw: str,
+              worker: str = "claude") -> dict:
     obj = dict(obj or {})
     status = obj.get("status_vote", "not_established")
     if status not in ALLOWED_STATUS:
@@ -185,7 +186,7 @@ def normalize(obj: dict | None, role: str, claim_id: str, raw: str) -> dict:
     return {
         "claim_id": claim_id,
         "role": role,
-        "worker": "claude",
+        "worker": worker,
         "status_vote": status,
         "evidence": evidence,
         "breaks_at": str(obj.get("breaks_at") or ""),

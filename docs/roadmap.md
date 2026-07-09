@@ -31,9 +31,11 @@ The gate is what makes everything else safe, so it cannot be last.
 
 ## Phase 3 — Provider adapters (remove the human messenger)
 
-- [x] Claude Code one-shot adapter (`claude_worker.py`): role + claim ->
-      schema-valid JSON, with a `--dry-run` mode and loud non-zero failure
-      signaling. Codex / Gemini / Grok / OpenCode adapters pending.
+- [x] Claude Code and Codex CLI one-shot adapters: role + claim -> schema-valid
+      JSON, with `--dry-run` modes and loud non-zero failure signaling. The
+      Codex adapter disables its shell and optional tool surfaces, validates
+      structured output, and invalidates calls that emit tool events. Gemini /
+      Grok / OpenCode adapters remain pending.
 - [x] Output normalization: force heterogeneous CLI output into the claim schema
       (implemented for Claude; reused by future adapters).
 - [ ] Resolve headless subscription auth so `claude -p` runs as a worker on the

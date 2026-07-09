@@ -19,6 +19,14 @@ This project follows [Semantic Versioning](https://semver.org/) and uses Convent
 - CI now installs the pinned Lean toolchain and exercises the real kernel-boundary
   self-test on every pull request.
 
+### Added
+
+- A tool-less Codex CLI worker adapter with schema-constrained output, ephemeral
+  sessions, subscription-preferred authentication, token-usage logging, and a
+  fail-closed alarm if any tool event is observed.
+- `run_mission.py --providers` can dispatch the same isolated role to Claude
+  Code and Codex CLI without exposing either worker to the other's draft.
+
 ### Fixed
 
 - `ideate.py --audit --dry-run` no longer performs real auditor calls.

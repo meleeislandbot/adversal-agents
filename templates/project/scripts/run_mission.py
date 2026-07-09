@@ -27,6 +27,7 @@ from pathlib import Path
 SCRIPTS = Path(__file__).resolve().parent
 DEFAULT_ROLES = ["formalizer", "prior-art-auditor", "skeptic"]
 ALLOWED_ROLES = {"formalizer", "prior-art-auditor", "skeptic", "strategist"}
+ALLOWED_PROVIDERS = {"claude", "codex"}
 SAFE_CLAIM_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
 
 
@@ -47,6 +48,8 @@ def main() -> int:
                     help="project root containing .adversal/")
     ap.add_argument("--roles", default=",".join(DEFAULT_ROLES),
                     help="comma-separated council roles to dispatch")
+    ap.add_argument("--providers", default="claude",
+                    help="comma-separated isolated worker providers: claude,codex")
     ap.add_argument("--timeout", type=int, default=480)
     ap.add_argument("--dry-run", action="store_true",
                     help="run the whole pipeline with no model calls")
@@ -55,9 +58,15 @@ def main() -> int:
     args = ap.parse_args()
 
     roles = [r.strip() for r in args.roles.split(",") if r.strip()]
+    providers = [p.strip() for p in args.providers.split(",") if p.strip()]
     unknown_roles = sorted(set(roles) - ALLOWED_ROLES)
     if unknown_roles:
         ap.error(f"unknown role(s): {', '.join(unknown_roles)}")
+    unknown_providers = sorted(set(providers) - ALLOWED_PROVIDERS)
+    if unknown_providers:
+        ap.error(f"unknown provider(s): {', '.join(unknown_providers)}")
+    if not providers:
+        ap.error("at least one provider is required")
     if not SAFE_CLAIM_ID.fullmatch(args.claim_id):
         ap.error("--claim-id must contain only letters, digits, dot, underscore, or hyphen")
     if bool(args.formal_statement) != bool(args.theorem_name):
@@ -81,24 +90,26 @@ def main() -> int:
         f"# Mission {run_id}\n\nClaim {args.claim_id}: {args.statement}\n"
         f"{formal_brief}\nRoles dispatched: {', '.join(roles)}\n", encoding="utf-8")
 
-    print(f"mission {run_id}: {len(roles)} role(s) on claim {args.claim_id}", file=sys.stderr)
+    print(f"mission {run_id}: {len(roles)} role(s) x {len(providers)} provider(s) "
+          f"on claim {args.claim_id}", file=sys.stderr)
     worker_failed = False
-    for role in roles:
-        cmd = [sys.executable, str(SCRIPTS / "claude_worker.py"),
-               "--role", role, "--run", str(run), "--claim-id", args.claim_id,
-               "--statement", args.statement, "--timeout", str(args.timeout)]
-        if args.formal_statement:
-            cmd.extend(["--formal-statement", args.formal_statement,
-                        "--theorem-name", args.theorem_name])
-        if args.dry_run:
-            cmd.append("--dry-run")
-        if args.allow_api:
-            cmd.append("--allow-api")
-        result = subprocess.run(cmd, check=False)
-        if result.returncode != 0:
-            worker_failed = True
-            print(f"  ! worker '{role}' failed with exit {result.returncode} (see stderr)",
-                  file=sys.stderr)
+    for provider in providers:
+        for role in roles:
+            cmd = [sys.executable, str(SCRIPTS / f"{provider}_worker.py"),
+                   "--role", role, "--run", str(run), "--claim-id", args.claim_id,
+                   "--statement", args.statement, "--timeout", str(args.timeout)]
+            if args.formal_statement:
+                cmd.extend(["--formal-statement", args.formal_statement,
+                            "--theorem-name", args.theorem_name])
+            if args.dry_run:
+                cmd.append("--dry-run")
+            if args.allow_api:
+                cmd.append("--allow-api")
+            result = subprocess.run(cmd, check=False)
+            if result.returncode != 0:
+                worker_failed = True
+                print(f"  ! worker '{provider}/{role}' failed with exit "
+                      f"{result.returncode} (see stderr)", file=sys.stderr)
 
     # The gate decides. The coordinator does not get a vote here.
     gate = subprocess.run(

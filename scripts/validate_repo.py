@@ -31,6 +31,7 @@ REQUIRED_FILES = [
     "profiles/hermes-verification-coordinator/SOUL.md",
     "docs/epistemics.md",
     "templates/project/scripts/verdict_engine.py",
+    "templates/project/scripts/codex_worker.py",
     "templates/project/roles/skeptic.md",
     "templates/project/.adversal/schema/claim.schema.json",
     "templates/project/.adversal/schema/claims.schema.json",
