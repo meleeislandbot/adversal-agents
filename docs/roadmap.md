@@ -47,7 +47,8 @@ The gate is what makes everything else safe, so it cannot be last.
 - [x] Divergent ideation (`ideate.py`): many bold directions per topic from the
       strategist, each an unverified conjecture + a concrete next checkable step,
       to feed the verification loop. Diversity via independent samples + distinct
-      angles today; multi-model diversity once other adapters land.
+      angles today; multi-model diversity once other adapters land. `--audit` tags
+      each direction known-vs-off-map (novelty axis, separate from the truth axis).
 - [x] Honest run report: proven / known / refuted / not_established counts.
 - [x] Decisions and budget ledgers written per run (subscription route + notional
       cost logged); canonical-brain promotion via the gate still pending.
