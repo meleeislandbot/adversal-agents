@@ -5,13 +5,9 @@
 .vscode/
 .idea/
 
-# Runtime artifacts: keep templates and ledgers, ignore generated runs/tmp
-.adversal/runs/*
-!.adversal/runs/.gitkeep
-.adversal/tmp/*
-!.adversal/tmp/.gitkeep
-.adversal/artifacts/*
-!.adversal/artifacts/.gitkeep
+# Runtime artifacts in a checked-out source repo. Versioned bootstrap assets
+# live under templates/project/.adversal/ instead.
+/.adversal/
 
 # Secrets / local credentials
 .env
