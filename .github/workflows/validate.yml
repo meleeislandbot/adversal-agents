@@ -17,6 +17,10 @@ jobs:
         uses: leanprover/lean-action@v1
         with:
           auto-config: false
+          build: false
+          test: false
+          lint: false
           use-mathlib-cache: false
+          use-github-cache: false
       - name: Validate repository
         run: make validate
