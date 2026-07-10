@@ -303,3 +303,30 @@ Report separate booleans, never a vague "ready":
 Include the project root, source commit, selected providers, cost risks, created
 paths, failed checks, and exact next action. Do not mark a missing or untested
 component ready. Detailed state belongs under `.adversal/`, not profile memory.
+
+## Updating an existing installation
+
+When the source repository advances, an installed project migrates with the
+`update` command — never by rerunning the bootstrap and never by hand-copying
+files. From a **fresh, clean clone** of the latest official `main` (not the
+project's old snapshot):
+
+```bash
+python3 <fresh-source>/scripts/bootstrap_adversal.py update \
+  --project <absolute-project-root> \
+  --profile-home <absolute-HERMES_HOME> --json
+```
+
+Without approval flags this is a **plan**: it lists what would be added,
+updated, or left for a human (`conflict` = a vendored file with proven local
+edits; `manual_review` = toolchain/config files that can trigger rebuilds).
+Show the plan to the user, then rerun with `--approve-project-write
+--approve-profile-write` after explicit approval.
+
+Guarantees: live research state (`.adversal/ledgers/`, `.adversal/runs/`, the
+map, `llm-wiki/` knowledge, bootstrap state) is **never written**; anything
+overwritten that differed is backed up under
+`.adversal/bootstrap/update-backup-<timestamp>/`; the recorded source commit,
+helper snapshot, and profile hashes are refreshed. If the report says
+`plugin_restart_required`, tell the user to restart the profile so the updated
+plugin loads.

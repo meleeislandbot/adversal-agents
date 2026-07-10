@@ -73,6 +73,23 @@ This project follows [Semantic Versioning](https://semver.org/) and uses Convent
   `MISIONES.md` (the 20-mission calibration-and-start campaign with the
   expectations pact) and `COMO-FUNCIONA.md` (the plain-language explanation of
   the whole system).
+- Curated bibliography (`bibliography.py` -> `llm-wiki/prior-art/`): typed,
+  link-required entries (active programs, documented dead ends with their
+  recorded reason, partial results, surveys) added by the web-capable
+  coordinator — workers never browse. `ideate.py`/`decompose.py` auto-detect
+  the generated digest and inject it as **forced contrast**: each direction
+  must declare its nearest known program and differential bet, or discard
+  itself (prohibition anchors models to the canon; declared contrast does not).
+  The ideation auditor also checks against the digest. New plugin tools
+  `adversal_bib_add` / `adversal_bib_digest`; M7 now opens with the
+  bibliographic sweep.
+- In-place updater (`bootstrap_adversal.py update`): migrates an installed
+  project and profile to a newer source checkout — vendored assets only
+  (scripts, roles, docs, schema, researcher docs, skill, SOUL, plugin), with
+  plan-only mode, dual approval flags, per-file backups, conflict detection via
+  recorded vendored hashes, manual-review bucket for toolchain files, and a
+  hard guarantee that live research state (ledgers, runs, map, wiki knowledge)
+  is never written.
 
 ### Fixed
 

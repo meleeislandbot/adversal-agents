@@ -45,7 +45,8 @@ class RegistrationTests(unittest.TestCase):
                     "adversal_map_set", "adversal_map_import",
                     "adversal_map_next", "adversal_map_status",
                     "adversal_decompose", "adversal_ideate",
-                    "adversal_backtranslate", "adversal_reverify"}
+                    "adversal_backtranslate", "adversal_reverify",
+                    "adversal_bib_add", "adversal_bib_digest"}
         self.assertEqual(set(self.ctx.tools), expected)
         for name, entry in self.ctx.tools.items():
             self.assertEqual(entry["toolset"], "adversal")

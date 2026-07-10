@@ -58,7 +58,13 @@ recover it from there. Do not continue from a moving branch.
    wrong, whatever the kernel said about it.
 
 Use `scripts/ideate.py` only for divergent generation. Its output is unverified
-and never enters canonical knowledge directly.
+and never enters canonical knowledge directly. Before the first serious
+ideation or decomposition on a goal, run a bibliography sweep: search the
+literature with YOUR web tools (workers never browse), verify each link loads,
+and record entries via `scripts/bibliography.py add` — dead ends with their
+reason. Generation then grounds on the digest automatically and each direction
+must declare its nearest known program and differential bet; relay those
+declarations to the user when presenting proposals.
 
 ## Promote knowledge
 

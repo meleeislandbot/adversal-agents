@@ -90,11 +90,21 @@ una vez con el terminal: `python3 scripts/map_tool.py export-obsidian`
 reabra `map/Map.canvas`.
 *Esperado:* un GOAL en morado y un pacto escrito de qué es éxito.
 
-**M7 — La primera descomposición.**
-`adversal_decompose` sobre `GOAL` (n 5). Presenta la propuesta completa al
-usuario con tu lectura crítica (¿cuáles son atacables en días, no meses?).
-Importa SOLO los que el usuario acepte: `adversal_map_import` con `only`.
-*Esperado:* 3–5 nodos grises nuevos. Es un plan, no un resultado — dilo así.
+**M7 — La bibliografía primero, la descomposición después.**
+Paso 1 — *campaña bibliográfica* (tú tienes web; los workers no): rastrea la
+literatura del objetivo — programas conocidos, callejones documentados y su
+porqué, resultados parciales, surveys. Verifica que cada enlace carga y añade
+cada hallazgo con `adversal_bib_add` (los callejones, con su `why_dead`).
+Objetivo mínimo: 8–15 entradas revisadas por el usuario (están enlazadas en su
+Obsidian — que haga clic en un par para fiarse del método, no de ti).
+Paso 2 — `adversal_decompose` sobre `GOAL` (n 5). Detectará el digest solo y
+obligará a cada pieza a declarar su programa conocido más cercano y su apuesta
+diferencial. Presenta la propuesta completa al usuario con tu lectura crítica
+(¿cuáles son atacables en días, no meses? ¿cuáles confiesan adyacencia a un
+callejón documentado?). Importa SOLO lo que el usuario acepte:
+`adversal_map_import` con `only`.
+*Esperado:* una bibliografía inicial con dientes y 3–5 nodos grises nuevos,
+cada uno con su adyacencia declarada. Es un plan, no un resultado — dilo así.
 
 **M8 — Objetivos formales para las hojas.**
 Para cada nodo hoja aceptado: misión de formalización de ENUNCIADO (no de

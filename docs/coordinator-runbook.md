@@ -110,6 +110,27 @@ graph view works too (suggested color groups: `tag:#map/proven` green,
 `tag:#map/refuted` red). Without Obsidian, `.adversal/map/map.md` carries the
 same information as text.
 
+## The bibliography: everyone else's map, before imagining your own
+
+Divergent generation has two blind spots: model memory re-derives the canon
+(its statistics pull toward the most-written-about routes) and forgets the
+graveyard. The curated bibliography (`scripts/bibliography.py`, living in
+`llm-wiki/prior-art/`) is the counterweight, and the division of labor is
+strict: **the coordinator searches the web** (workers never browse — isolation
+holds), verifies each link loads, and adds typed entries — `active-program`,
+`documented-dead-end` (reason required), `partial-result`, `survey`. Every
+entry is one click away from a human check.
+
+`ideate.py` and `decompose.py` auto-detect the digest and inject it as
+**forced contrast**, not prohibition: each generated direction must declare
+its nearest known program and its exact differential bet, or discard itself.
+A documented dead end may only be revisited by a bet that addresses its
+recorded cause of death. Known-adjacent is information, not disqualification:
+joining an active program with a declared twist is a legitimate move; walking
+into a documented grave is not. Bibliography is context, never a verdict —
+run the sweep before the first serious decomposition and refresh it when the
+goal shifts.
+
 ## Statement fidelity: the back-translation check
 
 `proven` certifies the **formal** statement; nothing certifies that the formal
@@ -207,6 +228,17 @@ adapter passes that variable through (it scrubs only the metered
 auth failure — relay them verbatim rather than improvising. Codex CLI stores
 file-based credentials that spawned shells can read, so `codex login` suffices;
 its quota-exhausted errors are not auth failures and clear at the plan's reset.
+
+## Updating: the installation migrates, state stays
+
+`bootstrap_adversal.py update`, run from a fresh clean clone of the latest
+official `main`, migrates the vendored assets — scripts, roles, docs, schema,
+the researcher docs, the coordinator skill, and the Hermes plugin — and never
+touches live research state (ledgers, runs, the map, wiki knowledge). Plan
+first (no flags), apply with both approval flags after the user says yes;
+differing files are backed up, proven local edits surface as conflicts for a
+human, and toolchain changes are only reported. Restart the profile when the
+report says the plugin changed.
 
 ## Setup: the profile bootstraps itself
 

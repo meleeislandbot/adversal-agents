@@ -575,6 +575,242 @@ def inspect(project: Path, profile_home: Path | None, profile_source: str) -> di
     }
 
 
+PLUGIN_SOURCE = SOURCE_ROOT / "integrations" / "hermes-adversal"
+PLUGIN_DEST_REL = Path("plugins") / "hermes-adversal"
+
+# The updater's contract: only vendored assets are ever touched. Live research
+# state — ledgers, runs, the map, the wiki's knowledge, bootstrap state — is
+# never written by an update, whatever the source ships.
+UPDATABLE_PREFIXES = (
+    Path("scripts"),
+    Path("roles"),
+    Path("docs"),
+    Path(".adversal/schema"),
+    Path(".adversal/templates"),
+)
+UPDATABLE_TOP = {
+    Path("README.md"),
+    Path("AGENTS.md"),
+    Path("CLAUDE.md"),
+    Path("GEMINI.md"),
+    Path(".hermes.md"),
+    Path("MISIONES.md"),
+    Path("COMO-FUNCIONA.md"),
+    INSTRUCTIONS_REL,
+    HELPER_REL,
+}
+# Files where a difference is reported for a human decision, never auto-applied:
+# toolchain changes trigger rebuilds, and project.yaml may carry user config.
+MANUAL_REVIEW = {
+    Path("lakefile.toml"),
+    Path("lean-toolchain"),
+    Path("lake-manifest.json"),
+    Path(".adversal/project.yaml"),
+}
+
+
+def _updatable(relative: Path) -> bool:
+    if relative in UPDATABLE_TOP:
+        return True
+    if relative.parts and relative.parts[0] == "llm-wiki":
+        # Wiki knowledge is live state; only its documentation files update.
+        return relative.name == "README.md"
+    return any(relative.is_relative_to(prefix) for prefix in UPDATABLE_PREFIXES)
+
+
+def _profile_update_items(profile_home: Path, state: dict) -> list[dict]:
+    """Skill, SOUL, and plugin files with their per-file action."""
+    items: list[dict] = []
+    recorded = state.get("profile", {})
+
+    soul_dest = profile_home / "SOUL.md"
+    if same_file(soul_dest, PROFILE_SOUL):
+        action = "unchanged"
+    elif not soul_dest.exists():
+        action = "add"
+    elif recorded.get("soul_sha256") and sha256_file(soul_dest) != recorded["soul_sha256"]:
+        action = "conflict"  # locally personalized SOUL: a human must decide
+    else:
+        action = "update"
+    items.append({"kind": "soul", "source": PROFILE_SOUL, "dest": soul_dest,
+                  "rel": "SOUL.md", "action": action})
+
+    skill_root = profile_home / "skills" / "research" / "adversal-coordinator"
+    for relative, source in skill_files().items():
+        dest = skill_root / relative
+        if same_file(dest, source):
+            action = "unchanged"
+        elif not dest.exists():
+            action = "add"
+        elif relative == Path("SKILL.md") and recorded.get("skill_sha256") \
+                and sha256_file(dest) != recorded["skill_sha256"]:
+            action = "conflict"
+        else:
+            action = "update"
+        items.append({"kind": "skill", "source": source, "dest": dest,
+                      "rel": f"skills/research/adversal-coordinator/{relative}",
+                      "action": action})
+
+    if PLUGIN_SOURCE.is_dir():
+        plugin_root = profile_home / PLUGIN_DEST_REL
+        for relative, source in iter_files(PLUGIN_SOURCE):
+            dest = plugin_root / relative
+            if same_file(dest, source):
+                action = "unchanged"
+            elif not dest.exists():
+                action = "add"
+            else:
+                action = "update"
+            items.append({"kind": "plugin", "source": source, "dest": dest,
+                          "rel": str(PLUGIN_DEST_REL / relative), "action": action})
+    return items
+
+
+def plan_update(project: Path, profile_home: Path) -> dict:
+    """Fail-closed diff between this source checkout and an installed project."""
+    validate_source()
+    validate_project_location(project)
+    if not profile_home.exists() or not profile_home.is_dir():
+        raise BootstrapError(f"Hermes profile home does not exist: {profile_home}")
+
+    identity = source_identity()
+    if identity.commit == "unknown":
+        raise BootstrapError(
+            "the source must be a Git checkout so the updated commit can be recorded")
+    if not official_origin(identity.origin):
+        raise BootstrapError(
+            f"source origin is not the official Adversal repository: {identity.origin}")
+    if not identity.clean:
+        raise BootstrapError(
+            "source checkout has modified or untracked files; update requires a clean commit")
+
+    state = existing_state(project)
+    if not state:
+        raise BootstrapError(
+            "no bootstrap state found — update migrates an installed project; "
+            "run the bootstrap first")
+    if Path(state.get("project_root", "")).resolve() != project.resolve():
+        raise BootstrapError("bootstrap state project_root does not match this project")
+    recorded_home = Path(state.get("profile", {}).get("home", "")).resolve()
+    if recorded_home != profile_home.resolve():
+        raise BootstrapError("this is not the Hermes profile that owns this project")
+
+    vendored_old: dict = state.get("vendored_sha256", {})
+    buckets: dict[str, list[str]] = {
+        "add": [], "update": [], "unchanged": [], "conflict": [], "manual_review": []}
+    project_actions: list[dict] = []
+    for relative, source in sorted(project_files().items()):
+        dest = project / relative
+        if relative in MANUAL_REVIEW:
+            if not same_file(dest, source):
+                buckets["manual_review"].append(str(relative))
+            continue
+        if not _updatable(relative):
+            continue  # live state: never touched, not even listed
+        if same_file(dest, source):
+            buckets["unchanged"].append(str(relative))
+            continue
+        if not dest.exists():
+            action = "add"
+        elif str(relative) in vendored_old and sha256_file(dest) != vendored_old[str(relative)]:
+            action = "conflict"  # proven local edit of a vendored file
+        else:
+            action = "update"
+        buckets[action].append(str(relative))
+        project_actions.append({"rel": str(relative), "source": source,
+                                "dest": dest, "action": action})
+
+    profile_items = _profile_update_items(profile_home, state)
+    profile_summary = {
+        "add": [i["rel"] for i in profile_items if i["action"] == "add"],
+        "update": [i["rel"] for i in profile_items if i["action"] == "update"],
+        "conflict": [i["rel"] for i in profile_items if i["action"] == "conflict"],
+        "unchanged_count": sum(1 for i in profile_items if i["action"] == "unchanged"),
+    }
+    plugin_touched = any(i["kind"] == "plugin" and i["action"] != "unchanged"
+                         for i in profile_items)
+    return {
+        "from_commit": state.get("source", {}).get("commit"),
+        "to_commit": identity.commit,
+        "to_version": identity.version,
+        "same_commit": state.get("source", {}).get("commit") == identity.commit,
+        "project": buckets,
+        "profile": profile_summary,
+        "plugin_restart_required": plugin_touched,
+        "live_state_untouched": True,
+        "_project_actions": project_actions,
+        "_profile_items": profile_items,
+        "_state": state,
+    }
+
+
+def apply_update(project: Path, profile_home: Path) -> dict:
+    plan = plan_update(project, profile_home)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    backup_root = project / ".adversal" / "bootstrap" / f"update-backup-{stamp}"
+    backed_up: list[str] = []
+
+    def place(source: Path, dest: Path, rel: str, scope: str) -> None:
+        if dest.exists() and not same_file(dest, source):
+            copy_file(dest, backup_root / scope / rel)
+            backed_up.append(f"{scope}/{rel}")
+        copy_file(source, dest)
+
+    for item in plan["_project_actions"]:
+        if item["action"] in ("add", "update"):
+            place(item["source"], item["dest"], item["rel"], "project")
+    for item in plan["_profile_items"]:
+        if item["action"] in ("add", "update"):
+            place(item["source"], item["dest"], item["rel"], "profile")
+
+    state = plan["_state"]
+    identity = source_identity()
+    vendored: dict[str, str] = {}
+    for relative, source in project_files().items():
+        dest = project / relative
+        if _updatable(relative) and relative not in MANUAL_REVIEW and dest.exists():
+            vendored[str(relative)] = sha256_file(dest)
+    state["source"] = {
+        "repository": REPOSITORY_URL,
+        "version": identity.version,
+        "commit": identity.commit,
+        "origin": identity.origin,
+    }
+    profile_state = state.setdefault("profile", {})
+    soul_dest = profile_home / "SOUL.md"
+    skill_md = profile_home / "skills" / "research" / "adversal-coordinator" / "SKILL.md"
+    if soul_dest.exists():
+        profile_state["soul_sha256"] = sha256_file(soul_dest)
+    if skill_md.exists():
+        profile_state["skill_sha256"] = sha256_file(skill_md)
+    helper = project / HELPER_REL
+    if helper.exists():
+        profile_state["bootstrap_helper_sha256"] = sha256_file(helper)
+    state["vendored_sha256"] = vendored
+    state["last_update"] = {
+        "at": utc_now(),
+        "from_commit": plan["from_commit"],
+        "to_commit": plan["to_commit"],
+        "to_version": plan["to_version"],
+        "backup": str(backup_root) if backed_up else None,
+    }
+    state["updated_at"] = utc_now()
+    atomic_write(
+        project / STATE_REL,
+        (json.dumps(state, indent=2, sort_keys=True) + "\n").encode("utf-8"),
+        0o644,
+    )
+
+    report = {key: plan[key] for key in
+              ("from_commit", "to_commit", "to_version", "same_commit",
+               "project", "profile", "plugin_restart_required",
+               "live_state_untouched")}
+    report["writes_performed"] = True
+    report["backup"] = str(backup_root) if backed_up else None
+    report["backed_up_files"] = backed_up
+    return report
+
+
 def emit(data: dict, as_json: bool) -> None:
     if as_json:
         print(json.dumps(data, indent=2, sort_keys=True))
@@ -613,6 +849,15 @@ def build_parser() -> argparse.ArgumentParser:
     verify_parser.add_argument(
         "--record", action="store_true", help="write readiness results to bootstrap state"
     )
+
+    update_parser = sub.add_parser(
+        "update",
+        help="migrate an installed project/profile to this source checkout "
+             "(plan-only without approval flags; live state is never touched)",
+    )
+    common(update_parser)
+    update_parser.add_argument("--approve-profile-write", action="store_true")
+    update_parser.add_argument("--approve-project-write", action="store_true")
     return parser
 
 
@@ -643,6 +888,20 @@ def main(argv: list[str] | None = None) -> int:
             result = verify_bootstrap(project, profile_home, args.record)
             emit(result, args.json)
             return 0 if result["deterministic_core_ready"] else 3
+        if args.command == "update":
+            if args.approve_profile_write and args.approve_project_write:
+                emit(apply_update(project, profile_home), args.json)
+                return 0
+            plan = plan_update(project, profile_home)
+            report = {key: plan[key] for key in
+                      ("from_commit", "to_commit", "to_version", "same_commit",
+                       "project", "profile", "plugin_restart_required",
+                       "live_state_untouched")}
+            report["writes_performed"] = False
+            report["note"] = ("plan only — rerun with --approve-project-write "
+                              "--approve-profile-write after user approval")
+            emit(report, args.json)
+            return 0
         raise BootstrapError(f"unsupported command: {args.command}")
     except BootstrapError as exc:
         print(f"bootstrap_error: {exc}", file=sys.stderr)
