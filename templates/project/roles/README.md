@@ -17,7 +17,7 @@ kind of evidence that grants `proven`, and only the kernel confirms it.
 | [strategist](strategist.md) | Propose lemmas, decompositions, next steps | No — output is `conjecture`/`sketch` at most |
 | [formalizer](formalizer.md) | Translate a specific step into Lean 4 / mathlib | Only via a Lean file the kernel accepts |
 | [prior-art-auditor](prior-art-auditor.md) | Is this already a known result? Cite it | No — it can only demote to `known` |
-| [skeptic](skeptic.md) | Find the first step that fails | No — it can only refute or withhold |
+| [skeptic](skeptic.md) | Find the first step that fails | No — `refuted` only via a kernel-checked Lean disproof of the exact negation; prose stays a lead |
 
 ## Mandatory output contract
 

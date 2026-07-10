@@ -35,6 +35,15 @@ REQUIRED_FILES = [
     "docs/epistemics.md",
     "templates/project/scripts/verdict_engine.py",
     "templates/project/scripts/codex_worker.py",
+    "templates/project/scripts/map_tool.py",
+    "templates/project/scripts/decompose.py",
+    "templates/project/scripts/backtranslate.py",
+    "templates/project/scripts/reverify.py",
+    "tests/test_map_tool.py",
+    "integrations/hermes-adversal/plugin.yaml",
+    "integrations/hermes-adversal/__init__.py",
+    "integrations/hermes-adversal/README.md",
+    "tests/test_hermes_plugin.py",
     "templates/project/roles/skeptic.md",
     "templates/project/.adversal/schema/claim.schema.json",
     "templates/project/.adversal/schema/claims.schema.json",
@@ -101,7 +110,7 @@ def check_self_bootstrap_contract() -> None:
         "bootstrap_adversal.py verify",
         "--approve-profile-write",
         "restart_required",
-        "Independent citation and counterexample validators are not implemented yet",
+        "An independent citation validator is not implemented yet",
     )
     missing = [term for term in required if term not in instructions]
     if missing:
@@ -165,7 +174,7 @@ def check_verdict_engine_lean_selftest_if_available() -> None:
         stderr=subprocess.PIPE,
         text=True,
         check=True,
-        timeout=60,
+        timeout=120,
         env=env,
     )
 

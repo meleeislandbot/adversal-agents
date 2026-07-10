@@ -37,6 +37,37 @@ This project follows [Semantic Versioning](https://semver.org/) and uses Convent
   fail-closed alarm if any tool event is observed.
 - `run_mission.py --providers` can dispatch the same isolated role to Claude
   Code and Codex CLI without exposing either worker to the other's draft.
+- Headless worker-auth remediation: adapters detect auth failures and print the
+  exact user-facing fix (Claude Code: `claude setup-token` stored as
+  `CLAUDE_CODE_OAUTH_TOKEN` in the coordinator's environment; Codex: `codex
+  login`), the Claude adapter labels the token route `subscription-token` in the
+  budget ledger, and setup/runbook/skill docs relay the same steps — because an
+  interactive login is GUI/keychain-bound and never reaches spawned workers.
+- The map (`map_tool.py`, `decompose.py`): a dependency blueprint from lemmas up
+  to one declared goal. `map.json` stores structure only; node colors are
+  derived exclusively from the gate's decisions ledger on every render, so
+  progress toward the goal is visible and cannot be hand-painted. Strategist
+  decompositions are proposals imported piecewise with user consent; `next`
+  emits ready targets as `run_mission.py` commands. `export-obsidian` writes a
+  vault-visible view — one note per node plus a colored JSON-Canvas dashboard
+  rendered natively by Obsidian, no plugin, refreshed on every render.
+- Kernel-checked refutations: a skeptic's `refuted` vote counts only with a Lean
+  disproof of the exact negation (`<theorem_name>_disproof : ¬ (formal_statement)`),
+  checked with the same strictness as a proof (exact type, no `sorry`, no
+  introduced axioms; axiom-smuggled disproofs rejected by self-test). Refutation
+  prose and counterexample text remain leads.
+- Statement-fidelity back-translation (`backtranslate.py`): an isolated worker
+  that never sees the original claim translates the Lean proposition back to
+  plain language; the human compares the two sentences, with a deterministic
+  numeric-mismatch hint. The tool never rules "equivalent".
+- Mathematical CI (`reverify.py`): re-checks every artifact ever marked `proven`
+  with the same kernel strictness, reports regressions and pre-canonical
+  unreproducible verdicts, and feeds the map's ⚠ markers.
+- Hermes plugin (`integrations/hermes-adversal/`): a native typed `adversal`
+  toolset wrapping the mission/map/fidelity/CI scripts, a `pre_tool_call`
+  cold-iron guard that blocks hand-edits to gate-owned files (fails open, never
+  a truth source), a `pre_llm_call` per-turn map-status injection, and a `/map`
+  command.
 
 ### Fixed
 

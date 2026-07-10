@@ -21,7 +21,7 @@ A claim is always in exactly one of these. Nothing else may be said about it.
 |---|---|---|
 | `proven` | Exact formal proposition established | A named Lean declaration whose type matches the canonical `formal_statement`, checked on the submitted file with no introduced axiom |
 | `known` | Already in the literature; not new | A prior-art citation confirmed independently of the worker that proposed it |
-| `refuted` | A specific formal step is false | A counterexample or false step confirmed by an independent deterministic validator |
+| `refuted` | The exact formal proposition is false | A named Lean disproof (`<theorem_name>_disproof`) whose type is the exact negation `¬ (formal_statement)`, kernel-checked with the same strictness as a proof |
 | `contested` | Substantive disagreement, unresolved | Evidence on more than one side |
 | `conjecture` | Precise, plausible, unproven | A stated argument; never a bare vote |
 | `sketch` | Informal argument with listed gaps | An argument plus an explicit gap list |
@@ -35,8 +35,10 @@ time. A run that ends with everything `not_established` has told you the truth.
 These are enforced deterministically in `verdict_engine.py`, in this priority
 order. Model votes never override them.
 
-1. **A specific, independently verified refutation dominates.** One real
-   counterexample beats any number of approvals; worker prose is only a lead.
+1. **A kernel-checked disproof dominates.** `refuted` is earned with exactly the
+   same strictness as `proven`: a Lean declaration inhabiting the exact negation
+   of the canonical statement, no introduced axioms. One real disproof beats any
+   number of approvals; worker counterexample prose is only a lead.
 2. **Verified prior art demotes to `known`.** A citation string is not enough:
    its identity and relevance must be checked outside the proposing worker.
 3. **`proven` requires an exact kernel check.** The submitted file must define

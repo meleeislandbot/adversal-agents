@@ -65,6 +65,16 @@ def build_prompt(role: str, claim_id: str, statement: str,
             "when possible). Do not include `sorry` or `admit`. The adapter will "
             "write and build this string; do not try to create a file and do not "
             "refuse merely because you have no filesystem or shell tools.\n")
+    if role == "skeptic" and formal_statement and theorem_name:
+        formalizer_note += (
+            "\nA `refuted` vote is EARNED only by a kernel-checked disproof. If you can "
+            "actually disprove the canonical claim, include a top-level key "
+            '"lean_disproof_source" containing COMPLETE Lean 4 source that defines '
+            f"`{theorem_name}_disproof` with exactly this type:\n¬ ({formal_statement})\n"
+            "Prefer `by decide`, `by norm_num`, or an explicit witness for computable "
+            "claims. No `sorry`, no new axioms; the kernel — not you — decides. If you "
+            "cannot construct a checkable disproof, do NOT vote refuted on prose alone: "
+            "vote not_established and put the suspect step in breaks_at.\n")
     return f"""{role_prompt}
 
 --- CLAIM UNDER TEST ---
@@ -112,10 +122,35 @@ FAILURE_MARKERS = ("not logged in", "please run /login", "invalid authentication
                    "401", "authentication_error", "api error", "rate limit",
                    "worker timed out")
 
+# Auth failures get their own remediation because the obvious advice is wrong:
+# an interactive `claude` login usually does not reach agent-spawned workers
+# (the macOS keychain secret is bound to the GUI session and the fallback file
+# token expires within hours), so "log in again" fixes nothing headless.
+AUTH_FAILURE_MARKERS = ("not logged in", "please run /login",
+                        "invalid authentication", "authentication_error", "401")
+
+AUTH_REMEDIATION = """\
+fix: the interactive `claude` login does not reach headless workers.
+Relay these exact steps to the person at the keyboard:
+  1. In your own terminal, run:  claude setup-token
+     (a browser opens; sign in with the Claude subscription account)
+  2. Store the printed token yourself as CLAUDE_CODE_OAUTH_TOKEN in the
+     environment that launches the workers — for a Hermes coordinator, add
+     the line to the profile's .env and restart the profile. It is a secret:
+     never commit it, never paste it into chat, never print it.
+  3. Re-run the failed worker or smoke test.
+The token bills to the subscription, not a metered API; this adapter passes
+CLAUDE_CODE_OAUTH_TOKEN through and scrubs only ANTHROPIC_API_KEY/AUTH_TOKEN."""
+
 
 def looks_like_failure(text: str) -> bool:
     low = text.lower()
     return any(m in low for m in FAILURE_MARKERS)
+
+
+def looks_like_auth_failure(text: str) -> bool:
+    low = text.lower()
+    return any(m in low for m in AUTH_FAILURE_MARKERS)
 
 
 def call_claude(prompt: str, cwd: Path, timeout: int,
@@ -129,10 +164,17 @@ def call_claude(prompt: str, cwd: Path, timeout: int,
     subscription call is charged money.
     """
     child_env = dict(os.environ)
-    route = "api-or-token-env"
     if not allow_api:
         for var in BILLING_VARS:
             child_env.pop(var, None)
+    # Route label from variable PRESENCE only; no secret value is read further
+    # or printed. setup-token's CLAUDE_CODE_OAUTH_TOKEN is subscription-billed,
+    # so it is deliberately not scrubbed.
+    if child_env.get("CLAUDE_CODE_OAUTH_TOKEN"):
+        route = "subscription-token"
+    elif any(child_env.get(var) for var in BILLING_VARS):
+        route = "api-or-token-env"
+    else:
         route = "subscription-preferred"
     try:
         proc = subprocess.run(
@@ -260,6 +302,8 @@ def main() -> int:
             failed = True
             print(f"error: Claude worker could not run (role {args.role}, exit {worker_exit}): "
                   f"{raw.strip()[:200]}", file=sys.stderr)
+            if looks_like_auth_failure(raw):
+                print(AUTH_REMEDIATION, file=sys.stderr)
         parsed = extract_json(raw)
         obj = normalize(parsed, args.role, args.claim_id, raw)
         # For the formalizer, persist any Lean source and point evidence at it so
@@ -269,6 +313,14 @@ def main() -> int:
             lean_path = args.run / "lean" / f"{args.claim_id}.lean"
             lean_path.write_text(str(parsed["lean_source"]), encoding="utf-8")
             obj["evidence"] = [{"type": "lean", "ref": f"lean/{args.claim_id}.lean"}]
+        # For the skeptic, a disproof gets the same treatment: persisted and
+        # kernel-checked. Refutation prose without it stays a lead.
+        if args.role == "skeptic" and isinstance(parsed, dict) and parsed.get("lean_disproof_source"):
+            (args.run / "lean").mkdir(parents=True, exist_ok=True)
+            lean_path = args.run / "lean" / f"{args.claim_id}-disproof{args.suffix}.lean"
+            lean_path.write_text(str(parsed["lean_disproof_source"]), encoding="utf-8")
+            obj["evidence"] = list(obj.get("evidence") or []) + [
+                {"type": "lean", "ref": f"lean/{lean_path.name}"}]
 
     out_path = args.run / "workers" / f"claude-{args.role}{args.suffix}.json"
     out_path.write_text(json.dumps(obj, indent=2), encoding="utf-8")

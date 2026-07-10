@@ -26,11 +26,21 @@ from claude_worker import (
     SAFE_CLAIM_ID,
     SAFE_SUFFIX,
     build_prompt,
+    looks_like_auth_failure,
     looks_like_failure,
     normalize,
 )
 
 BILLING_VARS = ("OPENAI_API_KEY", "CODEX_API_KEY")
+
+# Unlike Claude Code, Codex keeps file-based credentials that agent-spawned
+# shells can read, so a plain interactive login is enough.
+AUTH_REMEDIATION = """\
+fix: Codex CLI is not authenticated for this environment.
+Relay to the person at the keyboard: run `codex login` in your own terminal
+and finish the ChatGPT sign-in; no extra token wiring is needed afterwards.
+Note: an exhausted quota or rate limit is NOT an auth failure — it clears at
+the plan's reset; retry later instead of re-authenticating."""
 DISABLED_FEATURES = (
     "shell_tool",
     "apps",
@@ -239,6 +249,8 @@ def main() -> int:
             failed = True
             print(f"error: Codex worker could not run (role {args.role}, exit {worker_exit}): "
                   f"{raw.strip()[:200]}", file=sys.stderr)
+            if looks_like_auth_failure(raw):
+                print(AUTH_REMEDIATION, file=sys.stderr)
         try:
             candidate = json.loads(raw)
             parsed = candidate if isinstance(candidate, dict) else None
@@ -253,6 +265,12 @@ def main() -> int:
             lean_path = args.run / "lean" / f"{args.claim_id}-codex.lean"
             lean_path.write_text(str(parsed["lean_source"]), encoding="utf-8")
             obj["evidence"] = [{"type": "lean", "ref": f"lean/{lean_path.name}"}]
+        if args.role == "skeptic" and isinstance(parsed, dict) and parsed.get("lean_disproof_source"):
+            (args.run / "lean").mkdir(parents=True, exist_ok=True)
+            lean_path = args.run / "lean" / f"{args.claim_id}-disproof-codex{args.suffix}.lean"
+            lean_path.write_text(str(parsed["lean_disproof_source"]), encoding="utf-8")
+            obj["evidence"] = list(obj.get("evidence") or []) + [
+                {"type": "lean", "ref": f"lean/{lean_path.name}"}]
 
     out_path = args.run / "workers" / f"codex-{args.role}{args.suffix}.json"
     out_path.write_text(json.dumps(obj, indent=2), encoding="utf-8")
