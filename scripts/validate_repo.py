@@ -44,6 +44,8 @@ REQUIRED_FILES = [
     "integrations/hermes-adversal/__init__.py",
     "integrations/hermes-adversal/README.md",
     "tests/test_hermes_plugin.py",
+    "templates/project/MISIONES.md",
+    "templates/project/COMO-FUNCIONA.md",
     "templates/project/roles/skeptic.md",
     "templates/project/.adversal/schema/claim.schema.json",
     "templates/project/.adversal/schema/claims.schema.json",

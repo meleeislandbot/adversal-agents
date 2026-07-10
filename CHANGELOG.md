@@ -67,7 +67,12 @@ This project follows [Semantic Versioning](https://semver.org/) and uses Convent
   toolset wrapping the mission/map/fidelity/CI scripts, a `pre_tool_call`
   cold-iron guard that blocks hand-edits to gate-owned files (fails open, never
   a truth source), a `pre_llm_call` per-turn map-status injection, and a `/map`
-  command.
+  command. Setup Phase 4 now installs and enables it (profile-scoped) with user
+  consent.
+- Researcher-facing Spanish docs shipped with every instantiated project:
+  `MISIONES.md` (the 20-mission calibration-and-start campaign with the
+  expectations pact) and `COMO-FUNCIONA.md` (the plain-language explanation of
+  the whole system).
 
 ### Fixed
 

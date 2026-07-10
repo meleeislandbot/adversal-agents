@@ -157,6 +157,23 @@ and the official worker skills corresponding to providers the user later selects
 Do not recreate official skills. Ask before enabling toolsets or installing
 missing skills because those are profile writes and may use the network.
 
+Install the bundled Hermes plugin (a profile write — ask first). It gives the
+coordinator the typed `adversal` toolset, the cold-iron guard over gate-owned
+files, and per-turn map status. Plugins are **profile-scoped**: copy from the
+source checkout into the active profile's home, then enable both the plugin and
+its toolset with the profile-aware CLI:
+
+```bash
+cp -R <source>/integrations/hermes-adversal <HERMES_HOME>/plugins/hermes-adversal
+hermes plugins enable hermes-adversal   # use the profile alias/-p flag if not default
+hermes tools enable adversal
+```
+
+The plugin needs no built-in tool overrides (decline that privilege if
+prompted) and takes effect on the next session. If plugin support is
+unavailable, the system still works through the terminal scripts; note it in
+the readiness report.
+
 Configure the profile's default terminal working directory to the instantiated
 project only after showing the exact path and receiving approval.
 
