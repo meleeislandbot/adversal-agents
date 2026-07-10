@@ -195,6 +195,13 @@ and `lakefile.toml`. Once Lean is available, ask before fetching mathlib, then r
 
 ## Phase 6 — discover and select workers
 
+Dispatchable worker adapters exist today for **Claude Code and Codex CLI only**
+(`run_mission.py --providers claude,codex`). Other detected CLIs (Gemini,
+OpenCode, Ollama) may be recorded in the status file as present, but they cannot
+be dispatched as isolated workers yet — say so plainly instead of letting the
+user select them. A Claude-only council is a valid, sound default; Codex adds an
+independent second provider when the user has ChatGPT credentials and quota.
+
 Run the doctor again. For every candidate provider:
 
 1. Check CLI presence and version.
