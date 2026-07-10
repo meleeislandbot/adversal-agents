@@ -15,8 +15,8 @@ everything else through files and scripts, and never decides truth itself.
                                             │  dispatches each role, isolated
                         ┌───────────────────┼───────────────────┐
                         ▼                   ▼                   ▼
-                  claude_worker      claude_worker        claude_worker
-                   (formalizer)     (prior-art-auditor)     (skeptic)
+                    formalizer       prior-art-auditor       skeptic
+                  (Claude/Codex)       (Claude/Codex)      (Claude/Codex)
                         └───────────────────┼───────────────────┘
                                             ▼
                                   verdict_engine.py  (the gate: Lean + rules)
@@ -37,11 +37,13 @@ this monotonicity argument", Hermes:
 2. **Runs the mission** — a single command, no human relay:
    ```bash
    python3 .adversal/../scripts/run_mission.py \
-     --statement "<the exact claim>" --claim-id C1
+     --statement "<the exact claim>" --claim-id C1 \
+     --providers claude,codex
    ```
    (In an instantiated project the scripts live under the project's `scripts/`.)
    This dispatches the formalizer, prior-art auditor, and skeptic as isolated
-   Claude workers, then runs the gate.
+   Claude and Codex workers, then runs the gate. Omit `--providers` to retain
+   the lower-cost Claude-only default.
 3. **Reads the verdict** (`verdict.json`) — it does not form its own opinion of
    whether the proof is right.
 4. **Reports in plain language**, using only the allowed statuses: "Not
@@ -95,19 +97,18 @@ strategist call can run several minutes and use heavy tokens, so a wide ideation
 sweep consumes real quota. Tune effort down for generation; reserve high effort
 for hard formalization.
 
-## Setup: molding the profile (your plan is correct)
+## Setup: the profile bootstraps itself
 
-Your plan — you create a Hermes profile, a prompt configures it, your brother
-talks only to Hermes — is the right route. Concretely:
+The deployment assumes no separate technical agent. The user creates one fresh
+Hermes profile and pastes the README prompt into it. That same profile discovers
+its environment, clones an immutable source checkout, asks for the required
+permissions, installs its own Adversal identity/skill, and initializes the
+project through `bootstrap_adversal.py`.
 
-- **One coordinator profile per person is fine; one profile per provider is the
-  anti-pattern.** The providers (Claude, later Codex/Gemini/Grok) are *workers*
-  the one coordinator calls, not separate Hermes profiles.
-- The setup prompt already exists: the README quick-start points the agent to
-  [`instructions.md`](../instructions.md), which installs the Lean gate,
-  configures the coordinator profile from
-  [`profiles/hermes-verification-coordinator/SOUL.md`](../profiles/hermes-verification-coordinator/SOUL.md),
-  verifies the worker CLIs, and runs the validation missions.
-- "Molding" the profile means: copy that `SOUL.md` into the profile, enable the
-  `terminal` / `file` / `code_execution` toolsets (Hermes needs a terminal to
-  run `run_mission.py`), and let it read this runbook.
+After the profile changes `SOUL.md`, it checkpoints and stops. A new session in
+the same profile resumes setup, verifies the installed hashes, configures Lean
+and the user-selected worker routes, then runs deterministic acceptance tests.
+
+Providers are workers, not additional Hermes profiles. CLI syntax, paths,
+operating system, installed skills, and auth routes are discovered on the target
+machine rather than copied from the development machine.

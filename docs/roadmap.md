@@ -17,19 +17,25 @@ The gate is what makes everything else safe, so it cannot be last.
 
 ## Phase 2 — Formal verification integration
 
-- [x] Engine runs `lake build` (in a Lake project) or `lean` (standalone) and
-      records the true kernel result; finds an elan toolchain even when it is
+- [x] Engine checks the exact submitted file with `lake env lean` (in a Lake
+      project) or `lean` (standalone); finds an elan toolchain even when it is
       not on `PATH`.
 - [x] Treat `sorry`/`admit` as failure automatically.
+- [x] Bind `proven` to an exact canonical Lean type and named declaration;
+      reject unrelated files, path escapes, and introduced axioms.
+- [ ] Add independent validators for citations and counterexamples. Until then,
+      worker proposals fail closed as `not_established`.
 - [ ] Lean 4 + mathlib project scaffold generated per run (standalone,
       mathlib-free files already verify today).
 - [ ] Cache verified lemmas so re-checks are cheap.
 
 ## Phase 3 — Provider adapters (remove the human messenger)
 
-- [x] Claude Code one-shot adapter (`claude_worker.py`): role + claim ->
-      schema-valid JSON, with a `--dry-run` mode and loud non-zero failure
-      signaling. Codex / Gemini / Grok / OpenCode adapters pending.
+- [x] Claude Code and Codex CLI one-shot adapters: role + claim -> schema-valid
+      JSON, with `--dry-run` modes and loud non-zero failure signaling. The
+      Codex adapter disables its shell and optional tool surfaces, validates
+      structured output, and invalidates calls that emit tool events. Gemini /
+      Grok / OpenCode adapters remain pending.
 - [x] Output normalization: force heterogeneous CLI output into the claim schema
       (implemented for Claude; reused by future adapters).
 - [ ] Resolve headless subscription auth so `claude -p` runs as a worker on the
@@ -57,7 +63,12 @@ The gate is what makes everything else safe, so it cannot be last.
 
 ## Phase 5 — Researcher experience
 
+- [x] Fresh-profile self-bootstrap from the public README prompt: immutable
+      source acquisition, environment discovery, reversible profile setup,
+      project initialization, restart checkpoint, and deterministic readiness
+      recorder.
 - [ ] `adversal init` and `adversal run "<claim>"` wrappers.
-- [ ] Validation on a known theorem and on a deliberately-injected error, to
-      prove the machine catches both, before pointing it at open problems.
+- [ ] Validation on a known theorem and on a deliberately-injected error after
+      independent citation/counterexample validators land. Until then setup
+      verifies that both kinds of worker proposal fail closed.
 - [ ] Long-run resumability and an auditable history of what was ever proven.

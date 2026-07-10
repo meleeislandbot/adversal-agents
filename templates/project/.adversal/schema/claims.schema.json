@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Canonical claims under test",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["claim_id", "statement"],
+    "additionalProperties": false,
+    "properties": {
+      "claim_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"},
+      "statement": {
+        "type": "string",
+        "description": "Human explanation only; it is never kernel-certified."
+      },
+      "formal_statement": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Canonical Lean type. `proven` applies to this formal claim."
+      },
+      "theorem_name": {
+        "type": "string",
+        "pattern": "^[A-Za-z_][A-Za-z0-9_'.]*$",
+        "description": "Lean declaration required to have exactly formal_statement as its type."
+      }
+    },
+    "allOf": [
+      {
+        "if": {"required": ["formal_statement"]},
+        "then": {"required": ["theorem_name"]}
+      },
+      {
+        "if": {"required": ["theorem_name"]},
+        "then": {"required": ["formal_statement"]}
+      }
+    ]
+  }
+}

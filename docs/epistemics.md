@@ -19,9 +19,9 @@ A claim is always in exactly one of these. Nothing else may be said about it.
 
 | Status | Meaning | How it is earned |
 |---|---|---|
-| `proven` | Established | A Lean artifact that `lake build` accepts, re-checked by the engine |
-| `known` | Already in the literature; not new | A prior-art citation (name, author, year, reference) |
-| `refuted` | A specific step is false | A counterexample or a cited false step |
+| `proven` | Exact formal proposition established | A named Lean declaration whose type matches the canonical `formal_statement`, checked on the submitted file with no introduced axiom |
+| `known` | Already in the literature; not new | A prior-art citation confirmed independently of the worker that proposed it |
+| `refuted` | A specific formal step is false | A counterexample or false step confirmed by an independent deterministic validator |
 | `contested` | Substantive disagreement, unresolved | Evidence on more than one side |
 | `conjecture` | Precise, plausible, unproven | A stated argument; never a bare vote |
 | `sketch` | Informal argument with listed gaps | An argument plus an explicit gap list |
@@ -35,12 +35,13 @@ time. A run that ends with everything `not_established` has told you the truth.
 These are enforced deterministically in `verdict_engine.py`, in this priority
 order. Model votes never override them.
 
-1. **A specific, evidenced refutation dominates.** One real counterexample beats
-   any number of approvals.
-2. **Prior art demotes to `known`.** If it already exists, it is not progress,
-   regardless of how novel it felt.
-3. **`proven` requires a kernel check.** Only a Lean artifact the engine can
-   build earns it. Confidence, eloquence, and consensus earn nothing.
+1. **A specific, independently verified refutation dominates.** One real
+   counterexample beats any number of approvals; worker prose is only a lead.
+2. **Verified prior art demotes to `known`.** A citation string is not enough:
+   its identity and relevance must be checked outside the proposing worker.
+3. **`proven` requires an exact kernel check.** The submitted file must define
+   the named theorem with exactly the canonical Lean type. Compiling an unrelated
+   theorem, escaping the run directory, or introducing an axiom earns nothing.
 4. **A claimed formal proof we cannot check is `not_established`,** never
    `proven`. Unchecked is not proven.
 5. **Disagreement is preserved,** never averaged into a false middle.

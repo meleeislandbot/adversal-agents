@@ -6,7 +6,10 @@ No network calls. No secrets printed.
 from __future__ import annotations
 
 import ast
+import json
+import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -20,19 +23,32 @@ REQUIRED_FILES = [
     "CONTRIBUTING.md",
     "SECURITY.md",
     "instructions.md",
+    "scripts/bootstrap_adversal.py",
+    "tests/test_bootstrap_adversal.py",
     "AGENTS.md",
     "CLAUDE.md",
     "GEMINI.md",
+    "lean-toolchain",
     ".hermes.md",
     "profiles/hermes-verification-coordinator/SOUL.md",
+    "profiles/hermes-verification-coordinator/skills/research/adversal-coordinator/SKILL.md",
     "docs/epistemics.md",
     "templates/project/scripts/verdict_engine.py",
+    "templates/project/scripts/codex_worker.py",
     "templates/project/roles/skeptic.md",
     "templates/project/.adversal/schema/claim.schema.json",
+    "templates/project/.adversal/schema/claims.schema.json",
     "templates/project/llm-wiki/index.md",
     "templates/project/.adversal/project.yaml",
     "templates/project/scripts/adversal_doctor.py",
     "templates/project/scripts/create_run_skeleton.py",
+    "templates/project/.hermes.md",
+    "templates/project/AGENTS.md",
+    "templates/project/CLAUDE.md",
+    "templates/project/GEMINI.md",
+    "templates/project/lean-toolchain",
+    "templates/project/lakefile.toml",
+    "templates/project/lake-manifest.json",
 ]
 
 PROMPT_START = "<!-- adversal-setup-prompt:start -->"
@@ -76,6 +92,22 @@ def check_setup_prompt() -> None:
         fail(f"setup prompt must not be hidden in prompts/*.md; found {prompt_files}")
 
 
+def check_self_bootstrap_contract() -> None:
+    instructions = (ROOT / "instructions.md").read_text(encoding="utf-8")
+    required = (
+        "bootstrap_adversal.py inspect",
+        "bootstrap_adversal.py apply",
+        "bootstrap_adversal.py resume",
+        "bootstrap_adversal.py verify",
+        "--approve-profile-write",
+        "restart_required",
+        "Independent citation and counterexample validators are not implemented yet",
+    )
+    missing = [term for term in required if term not in instructions]
+    if missing:
+        fail(f"instructions.md is missing self-bootstrap contract terms: {missing}")
+
+
 def check_context_files_do_not_trigger_onboarding() -> None:
     forbidden = ("instructions.md", "one-shot onboarding", "guided setup")
     for rel in ("AGENTS.md", "CLAUDE.md", "GEMINI.md", ".hermes.md"):
@@ -114,6 +146,41 @@ def check_verdict_engine_selftest() -> None:
         check=True,
         timeout=30,
     )
+
+
+def check_verdict_engine_lean_selftest_if_available() -> None:
+    """Exercise the kernel boundary when Lean is installed, including via elan."""
+    lean = shutil.which("lean")
+    if lean is None:
+        fallback = Path.home() / ".elan" / "bin" / "lean"
+        lean = str(fallback) if fallback.exists() else None
+    if lean is None:
+        return
+    env = dict(os.environ)
+    env["PATH"] = f"{Path(lean).parent}:{env.get('PATH', '')}"
+    subprocess.run(
+        [sys.executable, "templates/project/scripts/verdict_engine.py", "--selftest-lean"],
+        cwd=ROOT,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=True,
+        timeout=60,
+        env=env,
+    )
+
+
+def check_json_schemas_parse() -> None:
+    for rel in (
+        "templates/project/.adversal/schema/claim.schema.json",
+        "templates/project/.adversal/schema/claims.schema.json",
+    ):
+        data = json.loads((ROOT / rel).read_text(encoding="utf-8"))
+        if not isinstance(data, dict) or data.get("$schema") is None:
+            fail(f"{rel} did not parse as a JSON schema")
+    manifest = json.loads((ROOT / "templates/project/lake-manifest.json").read_text(encoding="utf-8"))
+    if manifest.get("version") is None or not isinstance(manifest.get("packages"), list):
+        fail("templates/project/lake-manifest.json did not parse as a Lake manifest")
 
 
 def check_yaml_if_available() -> None:
@@ -169,10 +236,13 @@ def check_no_obvious_secrets() -> None:
 def main() -> int:
     check_required_files()
     check_setup_prompt()
+    check_self_bootstrap_contract()
     check_context_files_do_not_trigger_onboarding()
     check_python_syntax()
     check_template_doctor_runs()
     check_verdict_engine_selftest()
+    check_verdict_engine_lean_selftest_if_available()
+    check_json_schemas_parse()
     check_yaml_if_available()
     check_runtime_state_not_tracked_at_repo_root()
     check_no_generated_template_runs_tracked()

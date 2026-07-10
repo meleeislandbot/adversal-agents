@@ -44,6 +44,7 @@ paths:
   scenarios: .adversal/scenarios
   artifacts: .adversal/artifacts
   schema: .adversal/schema/claim.schema.json
+  claims_schema: .adversal/schema/claims.schema.json
 
 cost_policy:
   preferred_order: [deterministic, local_tools, local_models, subscription_native_cli, metered_api_explicit_approval_only]

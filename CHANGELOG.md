@@ -2,6 +2,59 @@
 
 This project follows [Semantic Versioning](https://semver.org/) and uses Conventional Commits.
 
+## [Unreleased]
+
+### Changed
+
+- Hardened the truth boundary: `proven` now requires the submitted Lean file to
+  define a named declaration with exactly the canonical formal type. The gate
+  rejects path escapes, unrelated compiling theorems, `sorry`/`admit`, and
+  model-introduced axioms.
+- Worker-authored citations and counterexamples are treated as unverified leads,
+  never as automatic `known` or `refuted` verdicts.
+- Claude workers run without tools or project customizations in isolated empty
+  directories, preventing cross-worker draft access.
+- Claims with no worker output now receive explicit `not_established` verdicts,
+  and mission failures propagate non-zero exit codes.
+- CI now installs the pinned Lean toolchain and exercises the real kernel-boundary
+  self-test on every pull request.
+
+### Added
+
+- Fresh-profile Hermes self-bootstrap: a profile can start from only the public
+  README prompt, clone and record one source commit, inspect the target machine,
+  install its own coordinator identity/skill, initialize a separate project,
+  and resume after a required new-session boundary.
+- `scripts/bootstrap_adversal.py`, a dependency-free, reversible installer with
+  explicit approval flags, conflict detection, `SOUL.md` backup, artifact hashes,
+  project-local checkpoints, helper snapshot, and deterministic readiness report.
+- Runtime project context files plus pinned Lean/mathlib project configuration
+  in `templates/project/`, and a bundled `adversal-coordinator` Hermes skill.
+- Bootstrap unit tests for read-only inspection, approval enforcement,
+  idempotency, rollback preservation, conflict fail-closed behavior, and resume.
+- A tool-less Codex CLI worker adapter with schema-constrained output, ephemeral
+  sessions, subscription-preferred authentication, token-usage logging, and a
+  fail-closed alarm if any tool event is observed.
+- `run_mission.py --providers` can dispatch the same isolated role to Claude
+  Code and Codex CLI without exposing either worker to the other's draft.
+
+### Fixed
+
+- Lean CI now uses `lean-action` in setup-only mode against the reproducible Lake
+  package under `templates/project/`, instead of falsely treating the repository
+  root as that package.
+- Remote onboarding no longer assumes the repository is already cloned, runs a
+  doctor from a path that has not been copied yet, or requires unavailable
+  `known`/`refuted` validators to pass setup.
+- Hermes coordinator documentation no longer references the removed
+  `hermes-redteam-coordinator` profile or assumes one CLI/profile syntax.
+- `ideate.py --audit --dry-run` no longer performs real auditor calls.
+- Tool-less formalizers are now told to return Lean source in JSON for the
+  adapter to persist and build; they are no longer instructed to write directly
+  into a run directory they cannot access.
+- Claude budget entries now follow the documented auth-route and cost-risk
+  ledger schema.
+
 ## [0.3.1] - 2026-07-09
 
 ### Added

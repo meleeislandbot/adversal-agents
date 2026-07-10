@@ -1,109 +1,247 @@
-# Adversal Agents — Guided Setup Instructions for AI Agents
+# Adversal Agents — self-bootstrap contract for a fresh Hermes profile
 
-This document is for the AI agent doing the one-time setup. It turns a Hermes
-profile plus a chosen project directory into a **cold-iron mathematical
-verification council**: several AI models in fixed adversarial roles, with every
-result gated on a proof-assistant kernel.
+You are both the one-time setup agent and the Hermes profile that will become
+the coordinator. The user will not relay technical steps between agents. Starting
+from this document, acquire the repository, configure the **currently active
+profile**, initialize a separate project, and validate the result.
 
-Read [`docs/epistemics.md`](docs/epistemics.md) first. The one rule that governs
-everything: **model agreement is not truth; `proven` is granted only by a Lean
-kernel check; the honest default is `not_established`.**
+Do not assume this repository is already cloned, a particular operating system,
+a profile name or path, installed tools, provider CLIs, authentication, or paid
+API permission. Discover each fact on the target machine.
 
-Cloning this repository activates nothing. Files only take effect when placed
-where a harness reads them, installed as skills, or executed.
+The governing rule is in `docs/epistemics.md`: model agreement is not truth;
+`proven` requires an exact Lean artifact accepted by the kernel; the honest
+default is `not_established`.
 
-## Operating model: guided and incremental
+## Safety and authority
 
-Check one area, fix it if it is safe and project-local, and stop to ask the
-moment a decision or risk appears. Never dump a giant list of blockers at the
-end.
+Continue automatically for read-only diagnostics, cloning this public repository,
+creating a new project directory, and running local deterministic tests.
 
-**Stop and ask before:** choosing/modifying a Hermes profile or writing to
-`~/.hermes/`; installing toolchains (including Lean); login or device-code flows;
-credentials or API keys; paid/metered API usage; env vars that may force paid
-billing; sudo or global config; destructive actions or overwrites; any external
-side effect.
+Stop and ask immediately before:
 
-**Proceed without asking for:** read-only diagnostics; CLI/version/profile
-checks; creating project-local folders and empty ledgers under `.adversal/`;
-writing run artifacts; running the local verdict engine and self-tests.
+- modifying the active Hermes profile, including `SOUL.md`, skills, or toolsets;
+- overwriting any existing file;
+- installing Lean, a package manager, a provider CLI, or any other toolchain;
+- login, device-code flows, credentials, secrets, or API keys;
+- paid/metered model calls or a route whose cost is unclear;
+- sudo, global shell/configuration changes, destructive actions, or ambiguous
+  mathematical/project scope.
 
-## Phase 1 — Configure the verification coordinator profile
+Never print secret values. Check credential environment variables by presence
+only. Do not create, switch, or modify a different Hermes profile.
 
-There will be a Hermes coordinator. Do not create one unless asked. Read-only
-first: `hermes profile list`, `hermes profile show <profile>`,
-`hermes -p <profile> tools --summary list`, `hermes -p <profile> skills list`.
+## Persistent state and restart rule
 
-A configured coordinator needs:
+The deterministic helper stores progress in:
 
-1. **SOUL.md** copied into the profile (a global change — ask first). Source:
-   `profiles/hermes-verification-coordinator/SOUL.md`.
-2. **Toolsets**: at minimum `file terminal code_execution web skills todo memory
-   session_search clarify delegation`. Enable messaging/gateway tools only if the
-   user wants progress pings.
-3. **Skills** (install official ones; do not recreate): the Hermes agent skill,
-   `llm-wiki`, and the worker skills for each provider CLI the user runs
-   (`claude-code`, `codex`, `gemini`, `opencode`, plus any Grok/other route).
+```text
+<project>/.adversal/bootstrap/state.json
+```
 
-## Phase 2 — Confirm the project root
+Completed phases are not repeated. Installing `SOUL.md` does not change the
+identity of the session already running, so setup deliberately crosses one new
+session. The helper records this boundary as phase `restart_required`. Never
+pretend the new identity is active before that restart.
 
-The Adversal project root should end up containing `.hermes.md`, `AGENTS.md`,
-`CLAUDE.md`, `GEMINI.md`, `.adversal/`, and the Lean project. If ambiguous, ask
-before continuing.
+## Phase 0 — identify the active profile and target project
 
-## Phase 3 — Install the gate (Lean 4 + mathlib)
+1. Confirm that this conversation is running inside the profile the user wants
+   to convert. Do not infer the path from the profile's display name.
+2. Resolve its effective `HERMES_HOME` from the environment or the profile-aware
+   native Hermes config command. Hermes CLI syntax varies: inspect `--help` and
+   use the current profile alias when plain `hermes` would target the default.
+3. Verify read-only that the directory exists and contains the current profile's
+   `SOUL.md`/configuration. Do not read `.env` values.
+4. Ask the user for the runtime project root if it was not supplied. It must be
+   separate from the Adversal source checkout. A project name or mathematical
+   goal is a user decision.
 
-The gate is what makes this project honest. Without it, nothing can ever be
-`proven`. Check first: `lake --version` / `lean --version`. If missing, explain
-the official install (`elan`, then `lake`) and **ask before installing** — it is
-a toolchain install. Once present, scaffold a per-project Lean package with
-mathlib as a dependency. Run `python3 scripts/adversal_doctor.py --json` and
-confirm `gate_available` is true.
+If the active profile home cannot be identified unambiguously, stop. Writing to
+a guessed profile is forbidden.
 
-## Phase 4 — Context files
+## Phase 1 — acquire one immutable source checkout
 
-Create minimal day-to-day context files in the root if missing: `.hermes.md`
-(Hermes coordinator rules), `AGENTS.md` (cross-agent contract), `CLAUDE.md` and
-`GEMINI.md` (thin wrappers pointing to `AGENTS.md`). Do not copy onboarding text
-into them.
+1. Check for `git` and Python 3. If either is missing, explain the exact blocker
+   and ask before installing anything.
+2. Clone this repository into a disposable setup directory:
 
-## Phase 5 — Control plane
+   ```text
+   https://github.com/meleeislandbot/adversal-agents.git
+   ```
 
-Copy the bootstrap assets from `templates/project/` into the root: the
-`.adversal/` control plane, `roles/`, `scripts/`, and the empty `llm-wiki/`
-template (the coordinator's gated knowledge base — it grows per project, so
-start it empty; never copy someone else's wiki). Do not clone the whole source
-repo for runtime state. Create empty ledgers without overwriting:
-`.adversal/ledgers/{claims,objections,decisions,budget}.jsonl`.
+   If an existing checkout is offered, verify its `origin` before using it.
+3. Record `git rev-parse HEAD` and use that exact checkout for the entire setup.
+   Confirm that `origin` is the repository above and that `git status --porcelain`
+   is empty. Do not bootstrap from modified/untracked source files or switch back
+   to a moving branch midway through setup.
+4. From the checkout, read `docs/epistemics.md`, `docs/setup-contract.md`, and
+   this file completely.
 
-## Phase 6 — Verify the worker CLIs
+Run the read-only preflight:
 
-For each provider the user pays for (Claude Code, Codex, Gemini, Grok, OpenCode,
-local/Ollama), one at a time: check the CLI exists and its version; check the
-auth route; check API-key env vars **by presence only, never printing values**;
-if login or a cost-sensitive choice is needed, stop and ask. Record each in
-`.adversal/workers/status.md` and append an auth/cost note to
-`.adversal/ledgers/budget.jsonl`. Prefer subscription-native routes; warn that
-API-key env vars may force metered billing.
+```bash
+python3 <source>/scripts/bootstrap_adversal.py inspect \
+  --project <absolute-project-root> \
+  --profile-home <absolute-HERMES_HOME> --json
+```
 
-## Phase 7 — Validate the machine before any real math
+Adapt shell syntax to the detected operating system; do not change the meaning
+of the arguments.
 
-Do not point the council at an open problem until it has passed all three:
+## Phase 2 — configure this profile and initialize the project
 
-1. **Known-theorem check** — feed a known theorem; prior-art auditor must return
-   `known` with a citation.
-2. **Injected-error check** — feed an argument with one false step; the skeptic
-   must return `refuted` with the exact `breaks_at`.
-3. **True-lemma check** — feed a small provable lemma; the formalizer must
-   produce a Lean file that `lake build` accepts before it is `proven`.
+Present one concise change plan containing:
 
-Run each as a mission under `.adversal/runs/<run-id>/` and score it with
-`scripts/verdict_engine.py --run <dir>`. If the machine mislabels any of the
-three, fix the setup before proceeding.
+- active profile home;
+- target project root;
+- repository version and full commit;
+- `SOUL.md` replacement and backup path;
+- bundled `adversal-coordinator` skill installation;
+- project template and context files to be created;
+- confirmation that no credentials, providers, or packages will be touched.
 
-## Phase 8 — Readiness summary
+Ask for explicit approval of both the profile write and project initialization.
+After approval, run:
 
-Keep it short: coordinator profile and readiness; project root; gate available
-(yes/no); context files present; ready workers and those needing login; cost
-risks; files created; and the results of the three validation missions. The
-detailed record lives in `.adversal/`.
+```bash
+python3 <source>/scripts/bootstrap_adversal.py apply \
+  --project <absolute-project-root> \
+  --profile-home <absolute-HERMES_HOME> \
+  --approve-profile-write --approve-project-write --json
+```
+
+The helper fails closed on non-identical existing files and refuses to instantiate
+inside the source checkout. Do not bypass those checks with manual copies.
+
+Read the emitted `continuation_prompt`. Tell the user to start a **new session in
+the same profile** and paste that prompt. Stop the current session here.
+
+## Phase 3 — resume in the newly configured profile
+
+In the new session:
+
+1. Load the `adversal-coordinator` skill.
+2. Read `<project>/.adversal/bootstrap/state.json` and its snapshotted
+   `.adversal/bootstrap/instructions.md`.
+3. Use the snapshotted helper at
+   `<project>/.adversal/bootstrap/bootstrap_adversal.py`. If its hash check fails,
+   clone the recorded repository and check out the exact recorded commit.
+4. Run:
+
+   ```bash
+   python3 <project>/.adversal/bootstrap/bootstrap_adversal.py resume \
+     --project <absolute-project-root> \
+     --profile-home <absolute-HERMES_HOME> --json
+   ```
+
+The command verifies the installed `SOUL.md`, skill, project, and profile identity
+before advancing the checkpoint.
+
+## Phase 4 — discover Hermes capabilities
+
+Use the current profile's native CLI/alias and read-only commands first:
+
+- profile details and doctor/status;
+- enabled toolsets;
+- installed/enabled skills;
+- effective terminal working directory.
+
+Required capabilities are `file`, `terminal`, `code_execution`, `web`, `skills`,
+`todo`, `memory`, `session_search`, `clarify`, and `delegation`. Browser and cron
+are optional. Computer control, messaging, smart-home, media, and other broad
+side-effect tools are not required.
+
+The bundled `adversal-coordinator` skill must be present. Check for `llm-wiki`
+and the official worker skills corresponding to providers the user later selects.
+Do not recreate official skills. Ask before enabling toolsets or installing
+missing skills because those are profile writes and may use the network.
+
+Configure the profile's default terminal working directory to the instantiated
+project only after showing the exact path and receiving approval.
+
+## Phase 5 — install and verify the Lean gate
+
+From the project root, run:
+
+```bash
+python3 scripts/adversal_doctor.py --json
+```
+
+If `gate_available` is false, explain that nothing can become `proven`. Ask before
+installing the official Lean toolchain through `elan`; adapt to the detected OS
+and avoid sudo or global shell edits unless separately approved.
+
+The project already pins matching Lean and mathlib releases in `lean-toolchain`
+and `lakefile.toml`. Once Lean is available, ask before fetching mathlib, then run
+`lake update` and `lake build`. Confirm `lake env lean --version` from the project.
+
+## Phase 6 — discover and select workers
+
+Run the doctor again. For every candidate provider:
+
+1. Check CLI presence and version.
+2. Check relevant API-key environment variables by **name/presence only**.
+3. Determine whether the route is subscription-native, local, metered API, or
+   unknown. Never infer this from the model name alone.
+4. Ask the user which providers to activate. Provider selection belongs to the
+   user.
+5. If login is required, stop at that provider and request permission.
+
+Record the route and cost risk in `.adversal/ledgers/budget.jsonl`. A CLI being
+installed does not prove it is authenticated or free to use.
+
+## Phase 7 — deterministic acceptance tests
+
+Before any real mathematics, run all checks that do not call a model:
+
+```bash
+python3 scripts/verdict_engine.py --selftest
+python3 scripts/verdict_engine.py --selftest-lean
+python3 scripts/run_mission.py \
+  --statement "For every natural number n, n equals n." \
+  --claim-id SETUP-DRY-RUN \
+  --formal-statement "∀ n : Nat, n = n" \
+  --theorem-name setup_refl \
+  --providers claude,codex --dry-run
+```
+
+The kernel self-test must accept a true exact theorem and reject a false theorem,
+`sorry`/`admit`, path escapes, unrelated declarations, and introduced axioms.
+The ordinary self-test must confirm that praise, consensus, worker-authored
+citations, and worker-authored counterexamples cannot earn a verdict.
+
+Independent citation and counterexample validators are not implemented yet.
+Therefore setup must **not** demand a `known` or `refuted` verdict. Their fail-closed
+`not_established` behavior is the acceptance criterion until those validators
+exist.
+
+A real provider smoke mission is optional and requires explicit approval because
+it consumes subscription quota or money. Core readiness must not depend on an
+unapproved model call.
+
+Finally run the deterministic readiness recorder:
+
+```bash
+python3 <project>/.adversal/bootstrap/bootstrap_adversal.py verify \
+  --project <absolute-project-root> \
+  --profile-home <absolute-HERMES_HOME> --record --json
+```
+
+It returns non-zero until the profile restart, project markers, Lean self-test,
+mathlib build, and verdict self-test all pass. Do not edit its readiness booleans
+by hand.
+
+## Phase 8 — readiness report
+
+Report separate booleans, never a vague "ready":
+
+- `bootstrap_complete`: profile identity, skill, restart, and project checkpoint;
+- `gate_ready`: Lean/mathlib and kernel self-test passed;
+- `deterministic_core_ready`: verdict and dry-run pipeline passed;
+- `workers_ready`: selected CLIs are present, authenticated, and route-checked;
+- `real_worker_smoke_tested`: an approved model mission succeeded.
+
+Include the project root, source commit, selected providers, cost risks, created
+paths, failed checks, and exact next action. Do not mark a missing or untested
+component ready. Detailed state belongs under `.adversal/`, not profile memory.

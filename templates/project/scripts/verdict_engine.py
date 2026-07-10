@@ -29,6 +29,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
@@ -74,12 +75,23 @@ class WorkerAssessment:
 
 
 @dataclass
+class ClaimSpec:
+    claim_id: str
+    statement: str
+    # The Lean type is the canonical mathematical claim. Natural-language text
+    # is explanatory only: the kernel cannot certify that an English sentence
+    # was translated faithfully.
+    formal_statement: str = ""
+    theorem_name: str = ""
+
+
+@dataclass
 class ClaimVerdict:
     claim_id: str
     statement: str
     status: str
     decided_by: str            # which cold-iron rule fixed the status
-    novel: bool                # False if it re-derives a known result
+    novel: bool | None         # False only after verified prior art; otherwise unknown
     lean_artifact: str = ""
     refutation: str = ""
     prior_art: str = ""
@@ -108,7 +120,72 @@ def _find_lakefile(start: Path) -> Path | None:
     return None
 
 
-def _lean_check(ref: str, run_root: Path) -> bool:
+SAFE_AXIOMS = {"propext", "Quot.sound", "Classical.choice"}
+LEAN_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_'.]*$")
+FORMAL_STATEMENT_FORBIDDEN = re.compile(
+    r"(?:\r|\n|;|--|/-|#|:=|\b(?:axiom|constant|theorem|lemma|example|def|namespace|end)\b)"
+)
+UNTRUSTED_COMMAND = re.compile(
+    r"(?m)^\s*(?:axiom|constant|syntax|macro|macro_rules|elab|set_option|scoped|attribute)\b"
+)
+IMPORT_LINE = re.compile(r"^\s*import\s+([A-Za-z0-9_'.]+)\s*$")
+TRUSTED_IMPORT = re.compile(r"^(?:Mathlib|Mathlib\..+|Std|Std\..+|Init|Init\..+)$")
+
+
+def _contained_lean_path(ref: str, run_root: Path) -> Path | None:
+    """Resolve a submitted artifact without letting evidence escape the run."""
+    if not ref or Path(ref).is_absolute():
+        return None
+    try:
+        lean_root = (run_root / "lean").resolve(strict=True)
+        path = (run_root / ref).resolve(strict=True)
+        path.relative_to(lean_root)
+    except (FileNotFoundError, OSError, ValueError):
+        return None
+    return path if path.is_file() and path.suffix == ".lean" else None
+
+
+def _axioms_from_output(output: str, theorem_name: str) -> set[str] | None:
+    """Read Lean's ``#print axioms`` result; None means it was not observed."""
+    pattern = re.compile(
+        rf"['\"]?{re.escape(theorem_name)}['\"]?\s+depends on axioms:\s*\[([^]]*)\]",
+        re.IGNORECASE,
+    )
+    match = pattern.search(output)
+    if not match:
+        # Lean prints this for constructive theorems with no axioms.
+        no_axioms = re.compile(
+            rf"['\"]?{re.escape(theorem_name)}['\"]?\s+does not depend on any axioms",
+            re.IGNORECASE,
+        )
+        return set() if no_axioms.search(output) else None
+    return {name.strip() for name in match.group(1).split(",") if name.strip()}
+
+
+def _safe_formal_statement(statement: str) -> bool:
+    """Accept a single Lean type expression, never extra checker commands."""
+    text = statement.strip()
+    return bool(text) and len(text) <= 20_000 and not FORMAL_STATEMENT_FORBIDDEN.search(text)
+
+
+def _split_trusted_imports(src: str) -> tuple[list[str], str] | None:
+    """Move allow-listed imports ahead of the canonical type declaration."""
+    imports: list[str] = []
+    body: list[str] = []
+    for line in src.splitlines():
+        match = IMPORT_LINE.fullmatch(line)
+        if match:
+            module = match.group(1)
+            if not TRUSTED_IMPORT.fullmatch(module):
+                return None
+            imports.append(f"import {module}")
+        else:
+            body.append(line)
+    return imports, "\n".join(body) + "\n"
+
+
+def _lean_check(ref: str, run_root: Path, theorem_name: str,
+                formal_statement: str) -> bool:
     """Return True only if a Lean artifact is confirmed by an actual build.
 
     If Lean is not installed here we CANNOT confirm it, so we return False.
@@ -118,8 +195,9 @@ def _lean_check(ref: str, run_root: Path) -> bool:
     it and exits 0, so we reject it explicitly. Erring toward "not proven" is the
     correct bias for a truth gate.
     """
-    path = (run_root / ref) if not Path(ref).is_absolute() else Path(ref)
-    if not path.exists():
+    path = _contained_lean_path(ref, run_root)
+    if path is None or not LEAN_NAME.fullmatch(theorem_name) \
+            or not _safe_formal_statement(formal_statement):
         return False
     try:
         src = path.read_text(encoding="utf-8", errors="ignore")
@@ -127,27 +205,60 @@ def _lean_check(ref: str, run_root: Path) -> bool:
         return False
     if re.search(r"\bsorry\b", src) or re.search(r"\badmit\b", src):
         return False
+    # A model-authored axiom can make any proposition compile. Reject new
+    # top-level assumptions before asking Lean for the theorem's dependencies.
+    if UNTRUSTED_COMMAND.search(src):
+        return False
+    split_source = _split_trusted_imports(src)
+    if split_source is None:
+        return False
+    imports, body = split_source
+    checker = None
     try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", suffix=".lean", prefix="gate-check-",
+            dir=path.parent, delete=False,
+        ) as fh:
+            checker = Path(fh.name)
+            if imports:
+                fh.write("\n".join(dict.fromkeys(imports)) + "\n\n")
+            # Elaborate the canonical proposition before any model-authored
+            # declarations or notation. The later theorem must inhabit this
+            # already-fixed type by definitional equality.
+            fh.write("namespace AdversalCanonical\n")
+            fh.write(f"def Claim : Prop := ({formal_statement})\n")
+            fh.write("end AdversalCanonical\n\n")
+            fh.write(body)
+            fh.write("\n-- Added by the deterministic gate.\n")
+            fh.write(f"#check {theorem_name}\n")
+            fh.write(f"example : AdversalCanonical.Claim := {theorem_name}\n")
+            fh.write(f"#print axioms {theorem_name}\n")
+
         project = _find_lakefile(path.parent)
-        if project:  # inside a Lake project (e.g. one using mathlib): full build
+        if project:  # Check this exact file inside the Lake environment.
             lake = _resolve_tool("lake")
             if not lake:
                 return False
-            proc = subprocess.run(["lake", "build"], cwd=str(project), text=True,
+            proc = subprocess.run([lake, "env", "lean", str(checker)], cwd=str(project), text=True,
                                   capture_output=True, timeout=1800, check=False,
                                   env={**os.environ, "PATH": _lean_bin_path()})
         else:  # standalone file: type-check it directly
             lean = _resolve_tool("lean")
             if not lean:
                 return False
-            proc = subprocess.run([lean, str(path)], text=True, capture_output=True,
+            proc = subprocess.run([lean, str(checker)], text=True, capture_output=True,
                                   timeout=600, check=False)
-        out = (proc.stdout + proc.stderr).lower()
-        if "sorry" in out or "error" in out:
+        raw_out = proc.stdout + proc.stderr
+        out = raw_out.lower()
+        if proc.returncode != 0 or "sorry" in out or "error" in out:
             return False
-        return proc.returncode == 0
+        axioms = _axioms_from_output(raw_out, theorem_name)
+        return axioms is not None and axioms <= SAFE_AXIOMS
     except Exception:
         return False
+    finally:
+        if checker is not None:
+            checker.unlink(missing_ok=True)
 
 
 def _lean_bin_path() -> str:
@@ -158,7 +269,7 @@ def _lean_bin_path() -> str:
 
 
 def decide(claim_id: str, statement: str, assessments: list[WorkerAssessment],
-           run_root: Path) -> ClaimVerdict:
+           run_root: Path, formal_statement: str = "", theorem_name: str = "") -> ClaimVerdict:
     """Apply the cold-iron rules in strict priority order.
 
     Priority is deliberate: refutation and prior-art beat approval, and a
@@ -168,36 +279,27 @@ def decide(claim_id: str, statement: str, assessments: list[WorkerAssessment],
     dissent = sorted({f"{a.worker}/{a.role}: {a.status_vote}" for a in assessments})
     sycophancy = sum(_count_sycophancy(a.raw_text) for a in assessments)
 
-    # Rule 1 — a genuine, evidenced refutation dominates everything. It must be an
-    # actual refutation vote or an explicit counterexample; a stray "breaks_at"
-    # left on a non-refuting vote (e.g. a formalizer voting "proven") is ignored.
-    for a in assessments:
-        has_counter = any(e.type == "counterexample" for e in a.evidence)
-        is_refutation = a.status_vote == STATUS_REFUTED or has_counter
-        if is_refutation and (has_counter or a.breaks_at):
-            ref = a.breaks_at or next((e.detail or e.ref for e in a.evidence
-                                       if e.type == "counterexample"), "")
-            return ClaimVerdict(claim_id, statement, STATUS_REFUTED,
-                                decided_by="rule1_refutation", novel=False,
-                                refutation=f"{a.worker}/{a.role}: {ref}",
-                                dissent=dissent, sycophancy_hits=sycophancy)
-
-    # Rule 2 — prior art means this is not new progress, whatever else was said.
-    for a in assessments:
-        if a.role == "prior-art-auditor" and a.status_vote == STATUS_KNOWN:
-            cite = next((e.ref for e in a.evidence if e.type == "citation"), "")
-            if cite:
-                return ClaimVerdict(claim_id, statement, STATUS_KNOWN,
-                                    decided_by="rule2_prior_art", novel=False,
-                                    prior_art=cite, dissent=dissent,
-                                    sycophancy_hits=sycophancy)
+    # Rules 1 and 2 need independent validators. Worker prose, a citation string,
+    # and the worker-controlled `verified` field are all proposals, not facts.
+    # Until a counterexample/citation validator is present, fail closed instead
+    # of laundering a model assertion into `refuted` or `known`.
+    unverified_refutations = [a for a in assessments if a.status_vote == STATUS_REFUTED]
+    unverified_citations = [a for a in assessments
+                            if a.role == "prior-art-auditor" and a.status_vote == STATUS_KNOWN]
+    if unverified_refutations:
+        dissent.append("refutation candidate present but not independently verified")
+    if unverified_citations:
+        dissent.append("citation candidate present but not independently verified")
 
     # Rule 3 — 'proven' requires a Lean artifact confirmed by an actual build here.
     for a in assessments:
+        if a.role != "formalizer" or a.status_vote != STATUS_PROVEN:
+            continue
         for e in a.evidence:
-            if e.type == "lean" and e.ref and _lean_check(e.ref, run_root):
+            if e.type == "lean" and e.ref and _lean_check(
+                    e.ref, run_root, theorem_name, formal_statement):
                 return ClaimVerdict(claim_id, statement, STATUS_PROVEN,
-                                    decided_by="rule3_lean_verified", novel=True,
+                                    decided_by="rule3_lean_verified", novel=None,
                                     lean_artifact=e.ref, dissent=dissent,
                                     sycophancy_hits=sycophancy)
 
@@ -205,18 +307,21 @@ def decide(claim_id: str, statement: str, assessments: list[WorkerAssessment],
     claims_formal = any(e.type == "lean" for a in assessments for e in a.evidence)
     if claims_formal:
         return ClaimVerdict(claim_id, statement, STATUS_NOT_ESTABLISHED,
-                            decided_by="rule4_formal_unverified", novel=False,
+                            decided_by="rule4_formal_unverified", novel=None,
                             dissent=dissent + ["lean artifact did not pass a kernel check here"],
                             sycophancy_hits=sycophancy)
 
     # Rule 5 — genuine, evidence-backed disagreement is a result. Bare opinions
     # differing is just noise and falls through to the skeptical default.
+    # Only informal, evidence-backed positions can create an unresolved
+    # disagreement here. Unverified `known`/`refuted`/`proven` proposals must
+    # not gain weight merely by disagreeing with one another.
     substantive = {a.status_vote for a in assessments
-                   if a.status_vote not in (STATUS_NOT_ESTABLISHED,)
+                   if a.status_vote in (STATUS_CONJECTURE, STATUS_SKETCH)
                    and (a.evidence or a.breaks_at)}
     if len(substantive) > 1:
         return ClaimVerdict(claim_id, statement, STATUS_CONTESTED,
-                            decided_by="rule5_unresolved_dissent", novel=False,
+                            decided_by="rule5_unresolved_dissent", novel=None,
                             dissent=dissent, sycophancy_hits=sycophancy)
 
     # Rule 6 — an informal status must be earned with reasoning, never a bare
@@ -228,7 +333,7 @@ def decide(claim_id: str, statement: str, assessments: list[WorkerAssessment],
             status = a.status_vote
             break
     return ClaimVerdict(claim_id, statement, status,
-                        decided_by="rule6_default_skeptical", novel=False,
+                        decided_by="rule6_default_skeptical", novel=None,
                         dissent=dissent, sycophancy_hits=sycophancy)
 
 
@@ -253,10 +358,18 @@ def load_run(run_root: Path) -> dict[str, list[WorkerAssessment]]:
     return by_claim
 
 
-def statements_for(run_root: Path) -> dict[str, str]:
+def claims_for(run_root: Path) -> dict[str, ClaimSpec]:
     f = run_root / "claims.json"
     if f.exists():
-        return {c["claim_id"]: c.get("statement", "") for c in json.loads(f.read_text())}
+        return {
+            c["claim_id"]: ClaimSpec(
+                claim_id=c["claim_id"],
+                statement=c.get("statement", ""),
+                formal_statement=c.get("formal_statement", ""),
+                theorem_name=c.get("theorem_name", ""),
+            )
+            for c in json.loads(f.read_text())
+        }
     return {}
 
 
@@ -278,7 +391,8 @@ def render_md(verdicts: list[ClaimVerdict]) -> str:
         if v.statement:
             lines.append(f"> {v.statement}")
         lines.append(f"- decided by: `{v.decided_by}`")
-        lines.append(f"- novel progress: {'yes' if v.novel else 'no'}")
+        novelty = "yes" if v.novel is True else "no" if v.novel is False else "unknown"
+        lines.append(f"- novel progress: {novelty}")
         if v.lean_artifact:
             lines.append(f"- Lean artifact (kernel-checked): `{v.lean_artifact}`")
         if v.prior_art:
@@ -299,10 +413,18 @@ def render_md(verdicts: list[ClaimVerdict]) -> str:
 
 
 def run(run_root: Path) -> list[ClaimVerdict]:
-    statements = statements_for(run_root)
+    claims = claims_for(run_root)
     by_claim = load_run(run_root)
-    verdicts = [decide(cid, statements.get(cid, ""), asmts, run_root)
-                for cid, asmts in by_claim.items()]
+    claim_ids = list(claims)
+    claim_ids.extend(cid for cid in by_claim if cid not in claims)
+    verdicts = []
+    for cid in claim_ids:
+        spec = claims.get(cid, ClaimSpec(cid, ""))
+        verdicts.append(decide(
+            cid, spec.statement, by_claim.get(cid, []), run_root,
+            formal_statement=spec.formal_statement,
+            theorem_name=spec.theorem_name,
+        ))
     (run_root / "verdict.json").write_text(
         json.dumps([asdict(v) for v in verdicts], indent=2), encoding="utf-8")
     (run_root / "verdict.md").write_text(render_md(verdicts), encoding="utf-8")
@@ -331,15 +453,28 @@ def selftest() -> int:
         print(f"[selftest] 5 workers + confidence 0.99 + praise -> {v.status} "
               f"({v.sycophancy_hits} praise markers ignored)  OK")
 
-        # One skeptic with a concrete counterexample refutes the crowd.
+        # A worker-authored counterexample is a candidate, not a verified fact.
         (root / "workers" / "skeptic.json").write_text(json.dumps({
             "claim_id": "C1", "role": "skeptic", "worker": "claude",
             "status_vote": "refuted", "breaks_at": "step 4: divergence assumed without proof",
             "evidence": [{"type": "counterexample", "detail": "s = 1/2 + 14.1i"}],
             "raw_text": "Step 4 does not follow."}))
         v = run(root)[0]
-        assert v.status == STATUS_REFUTED, v.status
-        print(f"[selftest] one evidenced refutation beats five approvals -> {v.status}  OK")
+        assert v.status == STATUS_NOT_ESTABLISHED, v.status
+        assert any("not independently verified" in note for note in v.dissent)
+        print(f"[selftest] unverified refutation text -> {v.status}  OK")
+
+        # A plausible-looking citation cannot award `known` on its own either.
+        (root / "workers" / "prior-art.json").write_text(json.dumps({
+            "claim_id": "C1", "role": "prior-art-auditor", "worker": "gpt",
+            "status_vote": "known",
+            "evidence": [{"type": "citation", "ref": "Invented theorem (2099)",
+                          "verified": True}],
+        }))
+        v = run(root)[0]
+        assert v.status == STATUS_NOT_ESTABLISHED, v.status
+        assert any("citation candidate" in note for note in v.dissent)
+        print(f"[selftest] worker-asserted citation -> {v.status}  OK")
 
         # Regression: a 'proven' vote carrying a stray breaks_at (e.g. str(None))
         # and no counterexample must NOT be read as a refutation.
@@ -354,19 +489,90 @@ def selftest() -> int:
         assert v.status == STATUS_NOT_ESTABLISHED, v.status
         assert v.decided_by == "rule4_formal_unverified", v.decided_by
         print(f"[selftest] proven-vote + junk breaks_at + unverifiable lean -> {v.status}  OK")
+
+        # Claims do not disappear just because every worker failed to answer.
+        (root / "claims.json").write_text(json.dumps([
+            {"claim_id": "C1", "statement": "RH follows from lemma X."},
+            {"claim_id": "C2", "statement": "A claim with no worker output."},
+        ]))
+        verdicts = run(root)
+        assert [v.claim_id for v in verdicts] == ["C1", "C2"]
+        assert verdicts[1].status == STATUS_NOT_ESTABLISHED
+        print("[selftest] missing worker output -> explicit not_established  OK")
     print("[selftest] cold iron holds.")
     return 0 if ok else 1
+
+
+def selftest_lean() -> int:
+    """Exercise the real Lean boundary: exact type, exact file, no new axiom."""
+    if not _resolve_tool("lean"):
+        print("[selftest-lean] Lean is not installed; cannot test the kernel boundary.",
+              file=sys.stderr)
+        return 2
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        (root / "workers").mkdir()
+        (root / "lean").mkdir()
+        artifact = root / "lean" / "C1.lean"
+        artifact.write_text("theorem Harmless : True := True.intro\n", encoding="utf-8")
+        (root / "claims.json").write_text(json.dumps([{
+            "claim_id": "C1", "statement": "The formal proposition True holds.",
+            "formal_statement": "True", "theorem_name": "Harmless",
+        }]), encoding="utf-8")
+        (root / "workers" / "formalizer.json").write_text(json.dumps({
+            "claim_id": "C1", "role": "formalizer", "worker": "selftest",
+            "status_vote": "proven", "evidence": [{"type": "lean", "ref": "lean/C1.lean"}],
+        }), encoding="utf-8")
+        verdict = run(root)[0]
+        assert verdict.status == STATUS_PROVEN, verdict
+        print("[selftest-lean] exact theorem type + kernel check -> proven  OK")
+
+        worker_file = root / "workers" / "formalizer.json"
+        worker = json.loads(worker_file.read_text(encoding="utf-8"))
+        worker["evidence"][0]["ref"] = str(artifact)
+        worker_file.write_text(json.dumps(worker), encoding="utf-8")
+        verdict = run(root)[0]
+        assert verdict.status == STATUS_NOT_ESTABLISHED, verdict
+        print("[selftest-lean] absolute/out-of-contract artifact path -> not_established  OK")
+
+        worker["evidence"][0]["ref"] = "lean/C1.lean"
+        worker["role"] = "skeptic"
+        worker_file.write_text(json.dumps(worker), encoding="utf-8")
+        verdict = run(root)[0]
+        assert verdict.status == STATUS_NOT_ESTABLISHED, verdict
+        print("[selftest-lean] non-formalizer Lean artifact -> not_established  OK")
+
+        worker["role"] = "formalizer"
+        worker_file.write_text(json.dumps(worker), encoding="utf-8")
+
+        (root / "claims.json").write_text(json.dumps([{
+            "claim_id": "C1", "statement": "A mismatched formal proposition.",
+            "formal_statement": "False", "theorem_name": "Harmless",
+        }]), encoding="utf-8")
+        verdict = run(root)[0]
+        assert verdict.status == STATUS_NOT_ESTABLISHED, verdict
+        print("[selftest-lean] unrelated compiling theorem -> not_established  OK")
+
+        artifact.write_text(
+            "axiom invented : False\ntheorem Harmless : False := invented\n", encoding="utf-8")
+        verdict = run(root)[0]
+        assert verdict.status == STATUS_NOT_ESTABLISHED, verdict
+        print("[selftest-lean] model-introduced axiom -> not_established  OK")
+    return 0
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Cold-iron verdict engine")
     ap.add_argument("--run", type=Path, help="Run directory to evaluate")
     ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--selftest-lean", action="store_true")
     args = ap.parse_args()
     if args.selftest:
         return selftest()
+    if args.selftest_lean:
+        return selftest_lean()
     if not args.run:
-        ap.error("pass --run <dir> or --selftest")
+        ap.error("pass --run <dir>, --selftest, or --selftest-lean")
     verdicts = run(args.run)
     print(render_md(verdicts))
     return 0

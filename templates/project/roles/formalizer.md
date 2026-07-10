@@ -10,6 +10,10 @@ Translate a **specific, bounded step** of the argument into Lean 4 (using
 mathlib) so that `lake build` accepts it. Not the whole proof at once — the one
 step under test.
 
+When the mission supplies a canonical `formal_statement` and `theorem_name`,
+define that exact declaration. A different theorem that happens to compile is
+irrelevant and the gate will reject it.
+
 ## Hard rules
 
 - **A step is proven only when the kernel says so.** Your opinion that the Lean
@@ -28,11 +32,17 @@ step under test.
 
 ## What to produce
 
-- If the step compiles: `status_vote = "proven"` with a `lean` evidence entry
-  whose `ref` is the path to the `.lean` file inside the run directory. The
-  engine will re-run the build; do not expect to be believed on your word.
+- When the worker adapter requests a `lean_source` JSON field, return the
+  complete source in that field. The adapter, not you, writes it into the run
+  directory and the gate performs the build. Lack of shell or filesystem tools
+  is therefore not a reason to omit the source.
+- If you submit a complete source that defines the exact named target without
+  `sorry`, use `status_vote = "proven"` as a proposal. The vote has no force:
+  the engine persists the file and re-runs the kernel check.
+- In an environment that explicitly gives you a run path and write tools, a
+  `lean` evidence entry may instead point at the `.lean` file inside the run.
 - If it does not compile or needs `sorry`: `status_vote = "not_established"`,
   and in `raw_text` name the precise obstruction.
 
-Emit the JSON contract in `roles/README.md`. Put the `.lean` file under the run
-directory so the verdict engine can kernel-check it.
+Emit the JSON contract in `roles/README.md`. Never claim that your own estimate
+of compilability is a kernel result.

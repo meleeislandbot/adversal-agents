@@ -55,8 +55,16 @@ The gate is real and runs today with no paid API:
 python3 templates/project/scripts/verdict_engine.py --selftest
 ```
 
-It demonstrates that five workers at 0.99 confidence, praising loudly, still
-produce `not_established` — and that one evidenced refutation beats them all.
+When Lean is installed, exercise the actual kernel boundary too:
+
+```bash
+python3 templates/project/scripts/verdict_engine.py --selftest-lean
+```
+
+The tests demonstrate that confidence and praise earn nothing; worker-authored
+citations and counterexamples also remain `not_established` until an independent
+validator confirms them. `proven` is bound to an exact canonical Lean type, not
+to the worker's natural-language description.
 
 ## Roles and contract
 
@@ -76,7 +84,11 @@ mathematics.
 
 <!-- adversal-setup-prompt:start -->
 ```text
-Read and follow this one-time setup guide exactly:
+You are the new Hermes profile that must configure itself as the Adversal
+coordinator. Do not assume the repository is already cloned or that another
+technical agent will finish the setup for you.
+
+Read and follow this self-bootstrap guide exactly:
 https://github.com/meleeislandbot/adversal-agents/blob/main/instructions.md
 
 Ask me only when the instructions tell you to.
@@ -85,9 +97,11 @@ Ask me only when the instructions tell you to.
 
 ## Status
 
-Early but running end to end. The deterministic gate, Lean kernel integration,
-adversarial roles, the Claude Code worker adapter, and a mission runner are in
-place (see [`docs/roadmap.md`](docs/roadmap.md)); adapters for the other
-providers are next. An instantiated project grows its own `llm-wiki/` — the
-coordinator's gated knowledge base — locally; the source repo ships only the
-empty template under `templates/project/llm-wiki/`.
+Early but running end to end. A fresh Hermes profile can now bootstrap itself
+from the public prompt with a commit-bound, reversible, restart-safe installer.
+The deterministic gate, Lean kernel integration, adversarial roles, isolated
+Claude Code and Codex CLI worker adapters, and mission runner are in place (see
+[`docs/roadmap.md`](docs/roadmap.md)); independent citation/counterexample
+validators and additional provider adapters remain pending. An instantiated
+project grows its own local gated `llm-wiki/`; the source repo ships only its
+empty template.
