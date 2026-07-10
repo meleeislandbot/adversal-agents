@@ -40,7 +40,7 @@ PROTECTED_PATTERNS = (
 SANCTIONED_SCRIPTS = (
     "run_mission.py", "verdict_engine.py", "map_tool.py", "decompose.py",
     "backtranslate.py", "reverify.py", "ideate.py", "bootstrap_adversal.py",
-    "adversal_doctor.py",
+    "adversal_doctor.py", "bibliography.py",
 )
 WRITE_HINTS = (">", ">>", "tee ", "rm ", "mv ", "cp ", "sed -i", "truncate",
                "unlink", "shutil", "write_text", "mkdir")
@@ -385,6 +385,46 @@ def register(ctx) -> None:  # pragma: no cover - thin wiring, pieces unit-tested
          "the kernel; regressions are flagged on the map. Run before promoting "
          "to the wiki.",
          {"project": S}, [], h_reverify)
+
+    # -- bibliography (the second, checkable memory) --
+    def h_bib_add(params, **_):
+        project, err = _project_or_error(params)
+        if err:
+            return err
+        args = ["add", "--project", str(project),
+                "--title", params["title"],
+                "--year", str(params["year"]),
+                "--link", params["link"],
+                "--status", params["status"],
+                "--route", params["route"]]
+        _opt(args, "--authors", params.get("authors"))
+        _opt(args, "--why-dead", params.get("why_dead"))
+        _opt(args, "--notes", params.get("notes"))
+        _opt(args, "--source", params.get("source"))
+        return _run("bibliography.py", args, project, 60)
+
+    tool("adversal_bib_add",
+         "Add one curated prior-art entry (link REQUIRED — verify it loads "
+         "first with your web tools). documented-dead-end entries need "
+         "why_dead. Feeds the digest that grounds ideation as forced contrast.",
+         {"title": S, "year": N, "link": S,
+          "status": {**S, "description": "active-program | documented-dead-end "
+                                         "| partial-result | survey"},
+          "route": S, "authors": S, "why_dead": S, "notes": S, "source": S,
+          "project": S},
+         ["title", "year", "link", "status", "route"], h_bib_add)
+
+    def h_bib_digest(params, **_):
+        project, err = _project_or_error(params)
+        if err:
+            return err
+        return _run("bibliography.py", ["digest", "--project", str(project)],
+                    project, 60)
+
+    tool("adversal_bib_digest",
+         "Regenerate the prior-art digest and index from the bibliography. "
+         "ideate/decompose auto-detect the digest and ground on it.",
+         {"project": S}, [], h_bib_digest)
 
     # -- hooks --
     def guard(*args, **kwargs):
