@@ -175,7 +175,10 @@ unavailable, the system still works through the terminal scripts; note it in
 the readiness report.
 
 Configure the profile's default terminal working directory to the instantiated
-project only after showing the exact path and receiving approval.
+project only after showing the exact path and receiving approval. With the same
+approval, add `ADVERSAL_PROJECT=<absolute-project-root>` to the profile's `.env`
+(it is a path, not a secret): the plugin's tools and hooks anchor on it in every
+new session even when the agent process starts elsewhere.
 
 ## Phase 5 — install and verify the Lean gate
 

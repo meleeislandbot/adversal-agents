@@ -20,7 +20,7 @@ not cryptography) and fails open so it can never take the agent down.
 from __future__ import annotations
 
 import json
-import re
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -47,7 +47,18 @@ WRITE_HINTS = (">", ">>", "tee ", "rm ", "mv ", "cp ", "sed -i", "truncate",
 
 
 def find_project(start: Path | None = None) -> Path | None:
-    """Walk upward to the nearest instantiated Adversal project."""
+    """Resolve the instantiated Adversal project.
+
+    Order: explicit start -> ADVERSAL_PROJECT env var (the durable anchor set
+    during setup; the agent process may start far from the project) -> walk
+    upward from the working directory.
+    """
+    if start is None:
+        anchored = os.environ.get("ADVERSAL_PROJECT", "").strip()
+        if anchored:
+            candidate = Path(anchored).expanduser()
+            if (candidate / ".adversal" / "project.yaml").exists():
+                return candidate.resolve()
     here = (start or Path.cwd()).resolve()
     for candidate in [here, *here.parents]:
         if (candidate / ".adversal" / "project.yaml").exists():
