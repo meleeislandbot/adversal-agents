@@ -82,6 +82,26 @@ Inspect the installed gate rather than assuming roadmap items are complete.
 Run `scripts/reverify.py` before promoting to the wiki: a `proven` that no
 longer re-checks is a regression, not a result.
 
+## Worker auth verification
+
+`adversal_doctor.py --json` checks CLI presence and `--version` exit code. A
+`present: true` worker can still be unauthenticated. **The only definitive auth
+check is a real smoke test** (`run_mission.py` without `--dry-run`). A worker
+that fails every role with "Not logged in" or "quota exhausted" is not usable
+regardless of what the doctor reports.
+
+Pre-flight checklist before a real mission:
+
+1. Run `scripts/adversal_doctor.py --json` for presence.
+2. Check `.adversal/workers/status.md` for the last known auth state.
+3. If a worker has never passed a smoke test, run one with a trivial claim
+   (`∀ n : Nat, n = n`, theorem `setup_refl`) before trusting it with real work.
+4. Treat `adversal_doctor.py`'s `gate_available: false` as a PATH-level warning,
+   not final evidence that Lean is unavailable: the verdict engine also resolves
+   `~/.elan/bin/lake` and `~/.elan/bin/lean`. Before stopping or proposing an
+   installation, check those executable paths and run their `--version` commands.
+   If they work, proceed; the gate will use the same fallback.
+
 ## Stop conditions
 
 Stop and ask for ambiguous mathematical scope, profile/global writes, toolchain
