@@ -35,9 +35,11 @@ hermes tools enable adversal        # or via `hermes tools` interactive UI
 # restart the Hermes process/profile
 ```
 
-Tools resolve the project by walking upward from the working directory to the
-nearest `.adversal/project.yaml` (the profile's `terminal.cwd` already points
-at the project), or take an explicit `project` argument.
+Tools and hooks resolve the project in this order: explicit `project` argument
+→ `ADVERSAL_PROJECT` env var (set it in the profile's `.env` during setup — it
+is a path, not a secret, and it anchors every new session even when the agent
+process starts far from the project) → walking upward from the working
+directory to the nearest `.adversal/project.yaml`.
 
 ## What this plugin is not
 

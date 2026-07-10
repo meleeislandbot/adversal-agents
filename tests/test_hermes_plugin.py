@@ -126,6 +126,32 @@ class GuardTests(unittest.TestCase):
         self.assertIsNone(plugin.guard_decision("", 42))  # type: ignore[arg-type]
 
 
+class ProjectAnchorTests(unittest.TestCase):
+    def test_env_var_anchors_project_resolution(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp) / "proj"
+            (project / ".adversal").mkdir(parents=True)
+            (project / ".adversal" / "project.yaml").write_text("x: 1\n")
+            with patch.dict(plugin.os.environ,
+                            {"ADVERSAL_PROJECT": str(project)}):
+                self.assertEqual(plugin.find_project(), project.resolve())
+            # A bogus anchor is ignored rather than trusted.
+            with patch.dict(plugin.os.environ,
+                            {"ADVERSAL_PROJECT": str(Path(tmp) / "nope")}):
+                found = plugin.find_project()
+                self.assertNotEqual(found, Path(tmp) / "nope")
+
+    def test_explicit_start_beats_env(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            a = Path(tmp) / "a"
+            b = Path(tmp) / "b"
+            for p in (a, b):
+                (p / ".adversal").mkdir(parents=True)
+                (p / ".adversal" / "project.yaml").write_text("x: 1\n")
+            with patch.dict(plugin.os.environ, {"ADVERSAL_PROJECT": str(a)}):
+                self.assertEqual(plugin.find_project(b), b.resolve())
+
+
 class StatusLineTests(unittest.TestCase):
     def test_status_line_counts_and_ready(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
