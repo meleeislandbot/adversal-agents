@@ -74,6 +74,16 @@ base from verified outcomes. Neither the live `.adversal/` nor a project's
 `llm-wiki/` is ever committed to the source repository — only the empty
 templates are.
 
+## Fresh-profile bootstrap
+
+Deployment begins with only a fresh Hermes profile and the public README prompt.
+The profile clones one source commit, then a deterministic helper installs the
+profile identity/skill and copies an instantiated project outside the source
+checkout. Progress and hashes are checkpointed under
+`.adversal/bootstrap/state.json`; setup crosses a required new-session boundary
+after `SOUL.md` changes. Machine-specific paths, CLI syntax, tools, providers,
+auth, and operating system are discovered rather than assumed.
+
 ## Autonomy is safe here because the gate is objective
 
 A coordinator may loop for many turns without asking the user — generate,

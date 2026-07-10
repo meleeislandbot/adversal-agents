@@ -23,12 +23,15 @@ REQUIRED_FILES = [
     "CONTRIBUTING.md",
     "SECURITY.md",
     "instructions.md",
+    "scripts/bootstrap_adversal.py",
+    "tests/test_bootstrap_adversal.py",
     "AGENTS.md",
     "CLAUDE.md",
     "GEMINI.md",
     "lean-toolchain",
     ".hermes.md",
     "profiles/hermes-verification-coordinator/SOUL.md",
+    "profiles/hermes-verification-coordinator/skills/research/adversal-coordinator/SKILL.md",
     "docs/epistemics.md",
     "templates/project/scripts/verdict_engine.py",
     "templates/project/scripts/codex_worker.py",
@@ -39,6 +42,12 @@ REQUIRED_FILES = [
     "templates/project/.adversal/project.yaml",
     "templates/project/scripts/adversal_doctor.py",
     "templates/project/scripts/create_run_skeleton.py",
+    "templates/project/.hermes.md",
+    "templates/project/AGENTS.md",
+    "templates/project/CLAUDE.md",
+    "templates/project/GEMINI.md",
+    "templates/project/lean-toolchain",
+    "templates/project/lakefile.toml",
 ]
 
 PROMPT_START = "<!-- adversal-setup-prompt:start -->"
@@ -80,6 +89,22 @@ def check_setup_prompt() -> None:
     prompt_files = sorted(p.name for p in (ROOT / "prompts").glob("*.md")) if (ROOT / "prompts").exists() else []
     if prompt_files:
         fail(f"setup prompt must not be hidden in prompts/*.md; found {prompt_files}")
+
+
+def check_self_bootstrap_contract() -> None:
+    instructions = (ROOT / "instructions.md").read_text(encoding="utf-8")
+    required = (
+        "bootstrap_adversal.py inspect",
+        "bootstrap_adversal.py apply",
+        "bootstrap_adversal.py resume",
+        "bootstrap_adversal.py verify",
+        "--approve-profile-write",
+        "restart_required",
+        "Independent citation and counterexample validators are not implemented yet",
+    )
+    missing = [term for term in required if term not in instructions]
+    if missing:
+        fail(f"instructions.md is missing self-bootstrap contract terms: {missing}")
 
 
 def check_context_files_do_not_trigger_onboarding() -> None:
@@ -207,6 +232,7 @@ def check_no_obvious_secrets() -> None:
 def main() -> int:
     check_required_files()
     check_setup_prompt()
+    check_self_bootstrap_contract()
     check_context_files_do_not_trigger_onboarding()
     check_python_syntax()
     check_template_doctor_runs()

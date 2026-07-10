@@ -42,7 +42,9 @@ Validation checks:
 - `CLAUDE.md`: Claude Code entrypoint.
 - `GEMINI.md`: Gemini CLI entrypoint.
 - `.hermes.md`: Hermes project context.
-- `profiles/hermes-redteam-coordinator/SOUL.md`: coordinator profile template; inert until copied into the selected Hermes profile.
+- `profiles/hermes-verification-coordinator/`: coordinator identity and bundled
+  skill; inert until the self-bootstrap helper installs them into the active
+  profile after approval.
 
 Keep context files concise and route normal agents to the target project's `.adversal/project.yaml` and `llm-wiki/index.md`. In this source repository, versioned bootstrap assets live under `templates/project/`; `instructions.md` is only for one-shot onboarding triggered by the README prompt.
 
@@ -50,6 +52,8 @@ Keep context files concise and route normal agents to the target project's `.adv
 
 - `templates/project/.adversal/`: versioned bootstrap control-plane seed for target projects.
 - `templates/project/scripts/`: optional helpers copied into target projects.
+- `scripts/bootstrap_adversal.py`: source-side, deterministic fresh-profile
+  installer; it snapshots itself under the target project's bootstrap state.
 - repo-root `.adversal/`: ignored local runtime state only; do not commit it.
 - repo-root `scripts/`: source-repository maintenance/validation only.
 

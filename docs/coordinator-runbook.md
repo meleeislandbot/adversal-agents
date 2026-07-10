@@ -97,19 +97,18 @@ strategist call can run several minutes and use heavy tokens, so a wide ideation
 sweep consumes real quota. Tune effort down for generation; reserve high effort
 for hard formalization.
 
-## Setup: molding the profile (your plan is correct)
+## Setup: the profile bootstraps itself
 
-Your plan — you create a Hermes profile, a prompt configures it, your brother
-talks only to Hermes — is the right route. Concretely:
+The deployment assumes no separate technical agent. The user creates one fresh
+Hermes profile and pastes the README prompt into it. That same profile discovers
+its environment, clones an immutable source checkout, asks for the required
+permissions, installs its own Adversal identity/skill, and initializes the
+project through `bootstrap_adversal.py`.
 
-- **One coordinator profile per person is fine; one profile per provider is the
-  anti-pattern.** The providers (Claude, Codex, later Gemini/Grok) are *workers*
-  the one coordinator calls, not separate Hermes profiles.
-- The setup prompt already exists: the README quick-start points the agent to
-  [`instructions.md`](../instructions.md), which installs the Lean gate,
-  configures the coordinator profile from
-  [`profiles/hermes-verification-coordinator/SOUL.md`](../profiles/hermes-verification-coordinator/SOUL.md),
-  verifies the worker CLIs, and runs the validation missions.
-- "Molding" the profile means: copy that `SOUL.md` into the profile, enable the
-  `terminal` / `file` / `code_execution` toolsets (Hermes needs a terminal to
-  run `run_mission.py`), and let it read this runbook.
+After the profile changes `SOUL.md`, it checkpoints and stops. A new session in
+the same profile resumes setup, verifies the installed hashes, configures Lean
+and the user-selected worker routes, then runs deterministic acceptance tests.
+
+Providers are workers, not additional Hermes profiles. CLI syntax, paths,
+operating system, installed skills, and auth routes are discovered on the target
+machine rather than copied from the development machine.

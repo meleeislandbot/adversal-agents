@@ -1,0 +1,4 @@
+interface:
+  display_name: "Adversal Coordinator"
+  short_description: "Run cold-iron verification missions safely"
+  default_prompt: "Use $adversal-coordinator to continue setting up or operate this Adversal verification project."

@@ -63,7 +63,12 @@ The gate is what makes everything else safe, so it cannot be last.
 
 ## Phase 5 — Researcher experience
 
+- [x] Fresh-profile self-bootstrap from the public README prompt: immutable
+      source acquisition, environment discovery, reversible profile setup,
+      project initialization, restart checkpoint, and deterministic readiness
+      recorder.
 - [ ] `adversal init` and `adversal run "<claim>"` wrappers.
-- [ ] Validation on a known theorem and on a deliberately-injected error, to
-      prove the machine catches both, before pointing it at open problems.
+- [ ] Validation on a known theorem and on a deliberately-injected error after
+      independent citation/counterexample validators land. Until then setup
+      verifies that both kinds of worker proposal fail closed.
 - [ ] Long-run resumability and an auditable history of what was ever proven.

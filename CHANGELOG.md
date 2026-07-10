@@ -21,6 +21,17 @@ This project follows [Semantic Versioning](https://semver.org/) and uses Convent
 
 ### Added
 
+- Fresh-profile Hermes self-bootstrap: a profile can start from only the public
+  README prompt, clone and record one source commit, inspect the target machine,
+  install its own coordinator identity/skill, initialize a separate project,
+  and resume after a required new-session boundary.
+- `scripts/bootstrap_adversal.py`, a dependency-free, reversible installer with
+  explicit approval flags, conflict detection, `SOUL.md` backup, artifact hashes,
+  project-local checkpoints, helper snapshot, and deterministic readiness report.
+- Runtime project context files plus pinned Lean/mathlib project configuration
+  in `templates/project/`, and a bundled `adversal-coordinator` Hermes skill.
+- Bootstrap unit tests for read-only inspection, approval enforcement,
+  idempotency, rollback preservation, conflict fail-closed behavior, and resume.
 - A tool-less Codex CLI worker adapter with schema-constrained output, ephemeral
   sessions, subscription-preferred authentication, token-usage logging, and a
   fail-closed alarm if any tool event is observed.
@@ -29,6 +40,11 @@ This project follows [Semantic Versioning](https://semver.org/) and uses Convent
 
 ### Fixed
 
+- Remote onboarding no longer assumes the repository is already cloned, runs a
+  doctor from a path that has not been copied yet, or requires unavailable
+  `known`/`refuted` validators to pass setup.
+- Hermes coordinator documentation no longer references the removed
+  `hermes-redteam-coordinator` profile or assumes one CLI/profile syntax.
 - `ideate.py --audit --dry-run` no longer performs real auditor calls.
 - Tool-less formalizers are now told to return Lean source in JSON for the
   adapter to persist and build; they are no longer instructed to write directly
