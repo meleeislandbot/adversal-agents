@@ -22,5 +22,6 @@ jobs:
           lint: false
           use-mathlib-cache: false
           use-github-cache: false
+          lake-package-directory: templates/project
       - name: Validate repository
         run: make validate

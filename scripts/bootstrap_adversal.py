@@ -460,13 +460,18 @@ def verify_bootstrap(project: Path, profile_home: Path, record: bool) -> dict:
     )
 
     manifest = project / "lake-manifest.json"
+    mathlib_checkout = project / ".lake" / "packages" / "mathlib"
     mathlib_check = (
         run_check(["lake", "build"], project, 600)
-        if gate_available and manifest.is_file()
+        if gate_available and manifest.is_file() and mathlib_checkout.is_dir()
         else {
             "ok": False,
             "exit_code": None,
-            "error": "lake-manifest.json missing; run approved `lake update` first",
+            "error": (
+                "mathlib checkout missing; run approved `lake update` before verification"
+                if manifest.is_file()
+                else "lake-manifest.json missing from the instantiated project"
+            ),
         }
     )
     verdict_check.pop("_stdout", None)

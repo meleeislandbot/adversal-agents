@@ -48,6 +48,7 @@ REQUIRED_FILES = [
     "templates/project/GEMINI.md",
     "templates/project/lean-toolchain",
     "templates/project/lakefile.toml",
+    "templates/project/lake-manifest.json",
 ]
 
 PROMPT_START = "<!-- adversal-setup-prompt:start -->"
@@ -177,6 +178,9 @@ def check_json_schemas_parse() -> None:
         data = json.loads((ROOT / rel).read_text(encoding="utf-8"))
         if not isinstance(data, dict) or data.get("$schema") is None:
             fail(f"{rel} did not parse as a JSON schema")
+    manifest = json.loads((ROOT / "templates/project/lake-manifest.json").read_text(encoding="utf-8"))
+    if manifest.get("version") is None or not isinstance(manifest.get("packages"), list):
+        fail("templates/project/lake-manifest.json did not parse as a Lake manifest")
 
 
 def check_yaml_if_available() -> None:

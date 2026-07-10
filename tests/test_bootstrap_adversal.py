@@ -116,6 +116,7 @@ class BootstrapAdversalTests(unittest.TestCase):
             self.assertIn("profile_restart_confirmed", resumed["completed"])
 
             (project / "lake-manifest.json").write_text("{}\n", encoding="utf-8")
+            (project / ".lake/packages/mathlib").mkdir(parents=True)
             doctor = json.dumps({
                 "gate_available": True,
                 "workers": {

@@ -40,9 +40,9 @@ This project follows [Semantic Versioning](https://semver.org/) and uses Convent
 
 ### Fixed
 
-- Lean CI now uses `lean-action` in setup-only mode, avoiding a false requirement
-  for a root `lake-manifest.json` when the Lake package belongs to instantiated
-  project templates.
+- Lean CI now uses `lean-action` in setup-only mode against the reproducible Lake
+  package under `templates/project/`, instead of falsely treating the repository
+  root as that package.
 - Remote onboarding no longer assumes the repository is already cloned, runs a
   doctor from a path that has not been copied yet, or requires unavailable
   `known`/`refuted` validators to pass setup.

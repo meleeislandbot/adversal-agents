@@ -16,6 +16,7 @@ llm-wiki/        # empty gated canonical knowledge base
 docs/            # copied epistemic and operating contracts
 lean-toolchain   # pinned Lean release
 lakefile.toml    # matching pinned mathlib release
+lake-manifest.json # pinned transitive Lake dependency graph
 ```
 
 The deterministic bootstrap also installs these runtime context files:
