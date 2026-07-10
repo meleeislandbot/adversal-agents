@@ -1,0 +1,7 @@
+name: hermes-adversal
+version: "0.1.0"
+description: "Native Adversal toolset for the Hermes coordinator: typed tools wrapping the mission/map/fidelity/CI scripts, a cold-iron guard that blocks hand-edits to gate-owned files, and per-turn map status injection. The gate still decides truth; this plugin only removes command-line friction and enforces the write boundary."
+author: "Adversal Agents"
+provides_hooks:
+  - pre_tool_call
+  - pre_llm_call

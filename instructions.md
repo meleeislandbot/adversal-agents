@@ -186,7 +186,33 @@ Run the doctor again. For every candidate provider:
    unknown. Never infer this from the model name alone.
 4. Ask the user which providers to activate. Provider selection belongs to the
    user.
-5. If login is required, stop at that provider and request permission.
+5. If login is required, stop at that provider, request permission, and set up
+   the provider's **headless** route — an interactive login alone is usually not
+   enough for spawned workers:
+
+   - **Claude Code.** The interactive `claude` login typically does not reach
+     agent-spawned workers: on macOS the keychain secret is bound to the GUI
+     session and the fallback file token expires within hours, so `claude -p`
+     reports `Not logged in · Please run /login` even though the user is, in
+     fact, logged in. Do not tell the user to log in again. Relay these exact
+     steps and wait for confirmation:
+     1. "In your own terminal, run `claude setup-token` and finish the browser
+        sign-in with your Claude subscription account."
+     2. "Store the printed token yourself as `CLAUDE_CODE_OAUTH_TOKEN` in the
+        environment that launches the workers — for a Hermes coordinator, add
+        the line to the profile's `.env`, then restart the profile. Never
+        commit it, never paste it into chat."
+     The token bills to the subscription, not a metered API; the Claude adapter
+     passes it through and scrubs only `ANTHROPIC_API_KEY`/`ANTHROPIC_AUTH_TOKEN`.
+     The adapter prints these same steps whenever a worker hits an auth failure.
+   - **Codex CLI.** `codex login` writes file-based credentials that spawned
+     workers can read; no extra wiring is needed. An exhausted quota or rate
+     limit is not an auth failure — it clears at the plan's reset.
+
+6. Prove auth from the worker's own context before recording it: run one
+   trivial worker call from the coordinator's terminal toolset and require a
+   non-auth-error reply. A login that works only in the user's interactive
+   terminal does not count toward `workers_ready`.
 
 Record the route and cost risk in `.adversal/ledgers/budget.jsonl`. A CLI being
 installed does not prove it is authenticated or free to use.
@@ -207,14 +233,19 @@ python3 scripts/run_mission.py \
 ```
 
 The kernel self-test must accept a true exact theorem and reject a false theorem,
-`sorry`/`admit`, path escapes, unrelated declarations, and introduced axioms.
-The ordinary self-test must confirm that praise, consensus, worker-authored
-citations, and worker-authored counterexamples cannot earn a verdict.
+`sorry`/`admit`, path escapes, unrelated declarations, and introduced axioms —
+and must grant `refuted` only to a kernel-checked Lean disproof of the exact
+negation, rejecting axiom-smuggled disproofs. The ordinary self-test must confirm
+that praise, consensus, worker-authored citations, and worker-authored
+counterexample prose cannot earn a verdict.
 
-Independent citation and counterexample validators are not implemented yet.
-Therefore setup must **not** demand a `known` or `refuted` verdict. Their fail-closed
-`not_established` behavior is the acceptance criterion until those validators
-exist.
+An independent citation validator is not implemented yet. Therefore setup must
+**not** demand a `known` verdict; its fail-closed `not_established` behavior is
+the acceptance criterion until that validator exists. `refuted` is earnable, but
+only through a kernel-checked disproof, so an injected-error mission may honestly
+end `refuted` (skeptic constructed a checkable disproof) or `not_established`
+with the break recorded as a lead — either is acceptable; silence about the flaw
+is not.
 
 A real provider smoke mission is optional and requires explicit approval because
 it consumes subscription quota or money. Core readiness must not depend on an

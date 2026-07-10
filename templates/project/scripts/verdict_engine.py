@@ -279,29 +279,70 @@ def decide(claim_id: str, statement: str, assessments: list[WorkerAssessment],
     dissent = sorted({f"{a.worker}/{a.role}: {a.status_vote}" for a in assessments})
     sycophancy = sum(_count_sycophancy(a.raw_text) for a in assessments)
 
-    # Rules 1 and 2 need independent validators. Worker prose, a citation string,
-    # and the worker-controlled `verified` field are all proposals, not facts.
-    # Until a counterexample/citation validator is present, fail closed instead
-    # of laundering a model assertion into `refuted` or `known`.
-    unverified_refutations = [a for a in assessments if a.status_vote == STATUS_REFUTED]
-    unverified_citations = [a for a in assessments
-                            if a.role == "prior-art-auditor" and a.status_vote == STATUS_KNOWN]
-    if unverified_refutations:
-        dissent.append("refutation candidate present but not independently verified")
-    if unverified_citations:
-        dissent.append("citation candidate present but not independently verified")
+    # Rule 1 — `refuted` must be EARNED exactly like `proven`: a Lean disproof of
+    # the canonical formal statement, kernel-checked here with the same strictness
+    # (exact type, no sorry, no introduced axioms). The disproof declaration must
+    # be named `<theorem_name>_disproof` and inhabit `¬ (formal_statement)`.
+    # Worker prose and worker-authored counterexample text never refute anything.
+    disproof_name = f"{theorem_name}_disproof" if theorem_name else ""
+    disproof_type = f"¬ ({formal_statement})" if formal_statement else ""
+    verified_disproof = ""
+    for a in assessments:
+        if a.role != "skeptic" or a.status_vote != STATUS_REFUTED or not disproof_name:
+            continue
+        for e in a.evidence:
+            if e.type == "lean" and e.ref and _lean_check(
+                    e.ref, run_root, disproof_name, disproof_type):
+                verified_disproof = f"{a.worker}/{a.role}: {e.ref}"
+                break
+        if verified_disproof:
+            break
 
     # Rule 3 — 'proven' requires a Lean artifact confirmed by an actual build here.
+    verified_proof = ""
     for a in assessments:
         if a.role != "formalizer" or a.status_vote != STATUS_PROVEN:
             continue
         for e in a.evidence:
             if e.type == "lean" and e.ref and _lean_check(
                     e.ref, run_root, theorem_name, formal_statement):
-                return ClaimVerdict(claim_id, statement, STATUS_PROVEN,
-                                    decided_by="rule3_lean_verified", novel=None,
-                                    lean_artifact=e.ref, dissent=dissent,
-                                    sycophancy_hits=sycophancy)
+                verified_proof = e.ref
+                break
+        if verified_proof:
+            break
+
+    # Rule 2 still needs an independent validator: a citation string and the
+    # worker-controlled `verified` field are proposals, not facts. The same goes
+    # for a refutation vote that did NOT come with a kernel-checked disproof.
+    unverified_refutations = [a for a in assessments if a.status_vote == STATUS_REFUTED]
+    unverified_citations = [a for a in assessments
+                            if a.role == "prior-art-auditor" and a.status_vote == STATUS_KNOWN]
+    if unverified_refutations and not verified_disproof:
+        dissent.append("refutation candidate present but not independently verified")
+    if unverified_citations:
+        dissent.append("citation candidate present but not independently verified")
+
+    if verified_proof and verified_disproof:
+        # The kernel accepted both P and ¬P. With the safe-axiom allowlist this
+        # should be impossible; if it happens, the gate itself is suspect and no
+        # status may be granted. Say so loudly instead of picking a side.
+        return ClaimVerdict(claim_id, statement, STATUS_CONTESTED,
+                            decided_by="rule0_gate_inconsistency", novel=None,
+                            lean_artifact=verified_proof, refutation=verified_disproof,
+                            dissent=dissent + ["kernel accepted both a proof and a "
+                                               "disproof — audit the gate before "
+                                               "trusting either"],
+                            sycophancy_hits=sycophancy)
+    if verified_disproof:
+        return ClaimVerdict(claim_id, statement, STATUS_REFUTED,
+                            decided_by="rule1_disproof_verified", novel=None,
+                            refutation=verified_disproof, dissent=dissent,
+                            sycophancy_hits=sycophancy)
+    if verified_proof:
+        return ClaimVerdict(claim_id, statement, STATUS_PROVEN,
+                            decided_by="rule3_lean_verified", novel=None,
+                            lean_artifact=verified_proof, dissent=dissent,
+                            sycophancy_hits=sycophancy)
 
     # Rule 4 — a claimed formal proof we could not kernel-check is NOT proven.
     claims_formal = any(e.type == "lean" for a in assessments for e in a.evidence)
@@ -464,6 +505,18 @@ def selftest() -> int:
         assert any("not independently verified" in note for note in v.dissent)
         print(f"[selftest] unverified refutation text -> {v.status}  OK")
 
+        # A refuted vote pointing at a Lean disproof we cannot check stays unearned.
+        (root / "workers" / "skeptic.json").write_text(json.dumps({
+            "claim_id": "C1", "role": "skeptic", "worker": "claude",
+            "status_vote": "refuted",
+            "evidence": [{"type": "lean", "ref": "lean/missing-disproof.lean"}],
+            "raw_text": "Disproof attached."}))
+        v = run(root)[0]
+        assert v.status == STATUS_NOT_ESTABLISHED, v.status
+        assert v.status != STATUS_REFUTED
+        print(f"[selftest] unverifiable lean disproof -> {v.status}  OK")
+        (root / "workers" / "skeptic.json").unlink()
+
         # A plausible-looking citation cannot award `known` on its own either.
         (root / "workers" / "prior-art.json").write_text(json.dumps({
             "claim_id": "C1", "role": "prior-art-auditor", "worker": "gpt",
@@ -558,6 +611,34 @@ def selftest_lean() -> int:
         verdict = run(root)[0]
         assert verdict.status == STATUS_NOT_ESTABLISHED, verdict
         print("[selftest-lean] model-introduced axiom -> not_established  OK")
+
+        # `refuted` is earned by a kernel-checked disproof of the exact negation.
+        for f in (root / "workers").glob("*.json"):
+            f.unlink()
+        (root / "claims.json").write_text(json.dumps([{
+            "claim_id": "C1", "statement": "The formal proposition False holds.",
+            "formal_statement": "False", "theorem_name": "Bogus",
+        }]), encoding="utf-8")
+        disproof = root / "lean" / "C1-disproof.lean"
+        disproof.write_text("theorem Bogus_disproof : ¬ (False) := fun h => h\n",
+                            encoding="utf-8")
+        (root / "workers" / "skeptic.json").write_text(json.dumps({
+            "claim_id": "C1", "role": "skeptic", "worker": "selftest",
+            "status_vote": "refuted",
+            "evidence": [{"type": "lean", "ref": "lean/C1-disproof.lean"}],
+        }), encoding="utf-8")
+        verdict = run(root)[0]
+        assert verdict.status == STATUS_REFUTED, verdict
+        assert verdict.decided_by == "rule1_disproof_verified", verdict
+        print("[selftest-lean] kernel-checked disproof -> refuted  OK")
+
+        # An axiom-smuggled disproof earns nothing, same as an axiom-smuggled proof.
+        disproof.write_text(
+            "axiom bad : ¬ (False)\ntheorem Bogus_disproof : ¬ (False) := bad\n",
+            encoding="utf-8")
+        verdict = run(root)[0]
+        assert verdict.status == STATUS_NOT_ESTABLISHED, verdict
+        print("[selftest-lean] axiom-smuggled disproof -> not_established  OK")
     return 0
 
 

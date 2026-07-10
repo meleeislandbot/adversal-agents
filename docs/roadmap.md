@@ -38,10 +38,14 @@ The gate is what makes everything else safe, so it cannot be last.
       Grok / OpenCode adapters remain pending.
 - [x] Output normalization: force heterogeneous CLI output into the claim schema
       (implemented for Claude; reused by future adapters).
-- [ ] Resolve headless subscription auth so `claude -p` runs as a worker on the
-      host. Blocked in nested/sandboxed shells that have no Claude login
-      (`claude -p` returns "Not logged in"); works where the user has run
-      `claude login`.
+- [x] Headless subscription auth for `claude -p` workers, diagnosed and routed:
+      interactive logins are GUI/keychain-bound and invisible to agent-spawned
+      shells, so the supported route is a long-lived `claude setup-token` stored
+      as `CLAUDE_CODE_OAUTH_TOKEN` in the coordinator's environment. The adapter
+      passes it through, labels the route in the budget ledger, and prints the
+      user-facing fix on every auth failure; setup relays it in
+      `instructions.md` Phase 6. (Minting the token is a one-time user action
+      per machine.)
 - [ ] Auth-route and cost detection per provider; budget ledger entries.
 - [ ] Capability routing: send formalization to the strongest Lean model, ideas
       to others, mechanical work to a cheap/local model.
@@ -58,6 +62,16 @@ The gate is what makes everything else safe, so it cannot be last.
 - [x] Honest run report: proven / known / refuted / not_established counts.
 - [x] Decisions and budget ledgers written per run (subscription route + notional
       cost logged); canonical-brain promotion via the gate still pending.
+- [x] The map (`map_tool.py` + `decompose.py`): a dependency blueprint from
+      lemmas up to one declared goal, mirroring the Lean community's blueprint
+      practice. Structure is a redrawable plan; node colors derive only from the
+      gate's decisions ledger — nothing can be painted green by hand. `next`
+      prints ready targets as `run_mission.py` commands; strategist
+      decompositions are proposals imported only with user consent.
+- [x] Kernel-checked refutations: `refuted` is earned by a Lean disproof of the
+      exact negation (`<theorem_name>_disproof : ¬ (formal_statement)`), same
+      strictness as `proven` (no sorry, no introduced axioms). Refutation prose
+      stays a lead.
 - [ ] Bounded autonomous loop: generate -> formalize -> check -> repair, with
       hard budget and escalation triggers (currently single-shot per mission).
 
@@ -67,8 +81,18 @@ The gate is what makes everything else safe, so it cannot be last.
       source acquisition, environment discovery, reversible profile setup,
       project initialization, restart checkpoint, and deterministic readiness
       recorder.
+- [x] Statement-fidelity back-translation (`backtranslate.py`): an isolated
+      worker sees ONLY the Lean proposition and translates it back; the human
+      compares the two sentences. The machine flags numeric mismatches but never
+      rules "equivalent".
+- [x] Mathematical CI (`reverify.py`): every artifact ever marked `proven` is
+      re-checked against the kernel with the same strictness; regressions (and
+      pre-canonical, unreproducible verdicts) are reported loudly and flagged on
+      the map.
 - [ ] `adversal init` and `adversal run "<claim>"` wrappers.
-- [ ] Validation on a known theorem and on a deliberately-injected error after
-      independent citation/counterexample validators land. Until then setup
-      verifies that both kinds of worker proposal fail closed.
-- [ ] Long-run resumability and an auditable history of what was ever proven.
+- [ ] Validation on a known theorem once an independent citation validator
+      lands (worker citations still fail closed). Injected-error validation is
+      live: a kernel-checked disproof earns `refuted`; anything less stays a
+      recorded lead.
+- [ ] Long-run resumability and an auditable history of what was ever proven
+      (partially covered by `reverify.py` over the recorded runs).

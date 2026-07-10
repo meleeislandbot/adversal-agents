@@ -26,13 +26,22 @@ not follow.
 
 ## What to produce
 
-- If you find a false or unjustified step: `status_vote = "refuted"`, set
-  `breaks_at` to the exact step, and add evidence — a `counterexample` if you
-  have one, or an `argument` explaining the gap.
+- If you can actually DISPROVE the canonical claim: `status_vote = "refuted"`,
+  set `breaks_at` to the exact step, and include `lean_disproof_source` —
+  complete Lean 4 source defining `<theorem_name>_disproof` whose type is
+  exactly the negation `¬ (<formal_statement>)`. Prefer `by decide`,
+  `by norm_num`, or an explicit witness. No `sorry`, no new axioms. The kernel,
+  not you, decides whether your refutation stands; `refuted` is earned with the
+  same strictness as `proven`.
+- If you believe the claim is false but cannot construct a checkable disproof:
+  `status_vote = "not_established"`, put the suspect step in `breaks_at`, and
+  attach your counterexample or argument as evidence. It is recorded as a lead,
+  never as a verdict — your prose refutes nothing by itself.
 - If you find no outright error but the argument has gaps:
   `status_vote = "not_established"` and list, in `raw_text`, each step that is
   assumed rather than proven.
 - Never `status_vote = "proven"`. That is not yours to give.
 
 Emit the JSON contract in `roles/README.md`. Nothing you write can certify a
-proof; you can only refute it or expose what is still missing.
+proof; you can only disprove it under the kernel or expose what is still
+missing.
