@@ -90,6 +90,23 @@ This project follows [Semantic Versioning](https://semver.org/) and uses Convent
   recorded vendored hashes, manual-review bucket for toolchain files, and a
   hard guarantee that live research state (ledgers, runs, map, wiki knowledge)
   is never written.
+- Comprehension phase — understanding with teeth, before any divergence:
+  - canonical sources: `bibliography.py attach-source` stores each paper as
+    hash-pinned Markdown in the wiki; per-entry reading levels (catalogued /
+    skimmed / deep-read) with stale detection when the source changes;
+  - the reader (`read_paper.py`): isolated worker(s) read the stored text in
+    chunks; every extracted claim must carry a verbatim quote that is
+    string-matched against the source — one unverifiable quote rejects the
+    whole reading; `--readers 2` for keystone papers;
+  - the dossier (`dossier.py`): ten-section comprehension pattern with
+    script-enforced rules (`respondida`/`establecido` need two deep-read
+    current sources; empty sections must declare why), researcher questions
+    with classification, tiered facts, adversarial audit that hunts missing
+    questions/weak claims/thin sections, chat-transcript intake as proposals,
+    and measured saturation rounds;
+  - ideation/decomposition now ground on BOTH digests (prior-art + dossier);
+    M7 becomes the comprehension mission with explicit exit criteria; ten new
+    plugin tools cover the whole flow.
 
 ### Fixed
 

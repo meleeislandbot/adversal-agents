@@ -37,8 +37,12 @@ PRIOR_ART_REL = Path("llm-wiki") / "prior-art"
 ENTRIES_REL = PRIOR_ART_REL / "entries.jsonl"
 DIGEST_REL = PRIOR_ART_REL / "digest.md"
 INDEX_REL = PRIOR_ART_REL / "index.md"
+SOURCES_REL = PRIOR_ART_REL / "sources"
+READINGS_REL = PRIOR_ART_REL / "readings"
 
 STATUSES = ("active-program", "documented-dead-end", "partial-result", "survey")
+# Reading pyramid. Only deep-read entries may support dossier claims.
+READ_LEVELS = ("catalogued", "skimmed", "deep-read")
 LINK = re.compile(r"^https?://\S+$")
 DIGEST_CHAR_BUDGET = 8000  # keep the injected block prompt-sized
 
@@ -70,6 +74,66 @@ def load_entries(project: Path) -> list[dict]:
 
 def normalize_link(link: str) -> str:
     return link.strip().rstrip("/").lower()
+
+
+def slugify(title: str) -> str:
+    s = "".join(c.lower() if c.isalnum() else "-" for c in title)
+    while "--" in s:
+        s = s.replace("--", "-")
+    return s.strip("-")[:60] or "entry"
+
+
+def sha256_text(text: str) -> str:
+    import hashlib
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def find_entry(entries: list[dict], link: str) -> dict | None:
+    return next((e for e in entries
+                 if normalize_link(e.get("link", "")) == normalize_link(link)), None)
+
+
+def save_entries(project: Path, entries: list[dict]) -> None:
+    path = project / ENTRIES_REL
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(e, ensure_ascii=False) + "\n"
+                            for e in entries), encoding="utf-8")
+
+
+def read_level(entry: dict) -> str:
+    level = entry.get("read_level", "catalogued")
+    return level if level in READ_LEVELS else "catalogued"
+
+
+def reading_is_stale(entry: dict) -> bool:
+    """A reading is only as good as the exact source text it read."""
+    return bool(entry.get("reading_source_sha256")
+                and entry.get("source_sha256")
+                and entry["reading_source_sha256"] != entry["source_sha256"])
+
+
+def deep_read_links(project: Path) -> set[str]:
+    """Normalized links of entries whose deep reading is current (not stale)."""
+    return {normalize_link(e["link"]) for e in load_entries(project)
+            if read_level(e) == "deep-read" and not reading_is_stale(e)}
+
+
+def record_reading(project: Path, link: str, level: str, reading_rel: str,
+                   source_sha: str) -> None:
+    """Called by read_paper.py after a reading passed quote validation."""
+    if level not in READ_LEVELS:
+        raise ValueError(f"bad read level {level!r}")
+    entries = load_entries(project)
+    entry = find_entry(entries, link)
+    if entry is None:
+        raise ValueError(f"no bibliography entry for {link}")
+    order = READ_LEVELS.index(level)
+    if READ_LEVELS.index(read_level(entry)) < order or reading_is_stale(entry):
+        entry["read_level"] = level
+    entry["reading_file"] = reading_rel
+    entry["reading_source_sha256"] = source_sha
+    save_entries(project, entries)
+    regenerate(project)
 
 
 def validate_entry(entry: dict) -> list[str]:
@@ -108,8 +172,14 @@ def _digest_body(entries: list[dict]) -> str:
             continue
         lines.append(f"## {STATUS_LABEL[status]}")
         for e in sorted(group, key=lambda x: (x.get("year", 0), x.get("title", ""))):
+            level = read_level(e)
+            marker = {"deep-read": "read in depth",
+                      "skimmed": "skimmed only",
+                      "catalogued": "UNREAD — on the shelf"}[level]
+            if reading_is_stale(e):
+                marker = "STALE READING — source changed, re-read required"
             item = (f"- **{e['title']}** ({e.get('authors', '?')}, {e['year']}) — "
-                    f"route: {e['route']}")
+                    f"route: {e['route']} — [{marker}]")
             if e.get("why_dead"):
                 item += f" — why dead: {e['why_dead']}"
             if e.get("notes"):
@@ -153,6 +223,14 @@ def render_index(entries: list[dict]) -> str:
             lines.append(f"### [{e['title']}]({e['link']})")
             lines.append(f"- authors: {e.get('authors', '?')} · year: {e['year']} "
                          f"· route: `{e['route']}`")
+            level = read_level(e)
+            stale = " · ⚠ STALE (source changed since it was read)" \
+                if reading_is_stale(e) else ""
+            lines.append(f"- reading: **{level}**{stale}")
+            if e.get("source_file"):
+                lines.append(f"- canonical source: `{e['source_file']}`")
+            if e.get("reading_file"):
+                lines.append(f"- reading report: `{e['reading_file']}`")
             if e.get("why_dead"):
                 lines.append(f"- **why dead:** {e['why_dead']}")
             if e.get("notes"):
@@ -209,6 +287,54 @@ def cmd_add(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_attach_source(args: argparse.Namespace) -> int:
+    """Store the canonical Markdown copy of a source inside the wiki.
+
+    The coordinator fetches and converts (it has web tools; workers do not);
+    this command gives the text its permanent, hash-pinned home. Readers read
+    THIS file and quote-checks run against THIS file, forever.
+    """
+    entries = load_entries(args.project)
+    entry = find_entry(entries, args.link)
+    if entry is None:
+        print(f"error: no bibliography entry with link {args.link} — add it first",
+              file=sys.stderr)
+        return 1
+    raw = Path(args.file)
+    if not raw.exists() or not raw.is_file():
+        print(f"error: source file not found: {raw}", file=sys.stderr)
+        return 1
+    body = raw.read_text(encoding="utf-8", errors="replace").strip()
+    if len(body) < 500:
+        print("error: source text is suspiciously short (<500 chars) — a failed "
+              "conversion read 'in depth' would be fake depth; fix the capture first",
+              file=sys.stderr)
+        return 1
+    slug = slugify(entry["title"])
+    dest_rel = SOURCES_REL / f"{slug}.md"
+    dest = args.project / dest_rel
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    digest_sha = sha256_text(body)
+    front = ("---\n"
+             f"url: {entry['link']}\n"
+             f"title: {json.dumps(entry['title'], ensure_ascii=False)}\n"
+             f"retrieved_at: {datetime.now(timezone.utc).isoformat(timespec='seconds')}\n"
+             f"body_sha256: {digest_sha}\n"
+             "note: private working copy for research; do not republish\n"
+             "---\n\n")
+    dest.write_text(front + body + "\n", encoding="utf-8")
+    changed = entry.get("source_sha256") not in (None, digest_sha)
+    entry["source_file"] = str(dest_rel)
+    entry["source_sha256"] = digest_sha
+    save_entries(args.project, entries)
+    regenerate(args.project)
+    print(f"source attached: {dest_rel} ({len(body)} chars, sha {digest_sha[:12]})")
+    if changed:
+        print("note: source text CHANGED — any existing reading is now stale "
+              "and must be redone before this entry supports anything")
+    return 0
+
+
 def cmd_digest(args: argparse.Namespace) -> int:
     digest, index = regenerate(args.project)
     entries = load_entries(args.project)
@@ -251,6 +377,13 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--source", default="coordinator-web-search",
                    help="who found it and how")
     p.set_defaults(fn=cmd_add)
+
+    p = sub.add_parser("attach-source",
+                       help="store the canonical .md copy of a source (hash-pinned)")
+    common(p)
+    p.add_argument("--link", required=True, help="link of the existing entry")
+    p.add_argument("--file", required=True, help="path to the converted Markdown")
+    p.set_defaults(fn=cmd_attach_source)
 
     p = sub.add_parser("digest", help="regenerate digest.md and index.md")
     common(p)

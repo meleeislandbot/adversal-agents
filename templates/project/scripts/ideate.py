@@ -46,16 +46,29 @@ def slug(text: str) -> str:
 
 
 DIGEST_REL = Path("llm-wiki") / "prior-art" / "digest.md"
+DOSSIER_DIGEST_REL = Path("llm-wiki") / "dossier" / "digest.md"
 
 
 def load_grounding(project: Path, override: str, disabled: bool) -> str:
-    """The curated prior-art digest, if the project has one."""
+    """Curated grounding: the prior-art digest plus the dossier digest.
+
+    Imagination starts FROM understanding: known programs and dead ends
+    (bibliography) and established facts / open cruxes (dossier), when the
+    project has them.
+    """
     if disabled:
         return ""
-    path = Path(override) if override else project / DIGEST_REL
-    if not path.exists():
-        return ""
-    return path.read_text(encoding="utf-8").strip()
+    if override:
+        path = Path(override)
+        return path.read_text(encoding="utf-8").strip() if path.exists() else ""
+    parts = []
+    for rel in (DIGEST_REL, DOSSIER_DIGEST_REL):
+        path = project / rel
+        if path.exists():
+            text = path.read_text(encoding="utf-8").strip()
+            if text:
+                parts.append(text)
+    return "\n\n".join(parts)
 
 
 def grounding_block(digest: str) -> str:

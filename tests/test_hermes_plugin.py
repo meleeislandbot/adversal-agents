@@ -46,7 +46,12 @@ class RegistrationTests(unittest.TestCase):
                     "adversal_map_next", "adversal_map_status",
                     "adversal_decompose", "adversal_ideate",
                     "adversal_backtranslate", "adversal_reverify",
-                    "adversal_bib_add", "adversal_bib_digest"}
+                    "adversal_bib_add", "adversal_bib_digest",
+                    "adversal_bib_attach", "adversal_read_paper",
+                    "adversal_dossier_question", "adversal_dossier_classify",
+                    "adversal_dossier_fact", "adversal_dossier_note",
+                    "adversal_dossier_round", "adversal_dossier_audit",
+                    "adversal_dossier_intake", "adversal_dossier_status"}
         self.assertEqual(set(self.ctx.tools), expected)
         for name, entry in self.ctx.tools.items():
             self.assertEqual(entry["toolset"], "adversal")
