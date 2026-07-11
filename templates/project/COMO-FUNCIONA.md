@@ -48,6 +48,20 @@ ella.
 6. **Las misiones.** La unidad de trabajo: una afirmación concreta y acotada
    que se somete al proceso completo.
 
+## Antes de imaginar: la fase de comprensión
+
+Con el objetivo declarado, el sistema no se lanza a proponer: primero se
+estudia el problema en serio. El coordinador trae los papers a la wiki (copias
+canónicas, ancladas por hash), lectores aislados los leen de verdad — cada
+conclusión anclada a una cita textual que una máquina comprueba contra el
+documento; una cita inventada tumba la lectura entera — y todo se organiza en
+el **expediente**: las preguntas del investigador clasificadas (respondida /
+parcial / abierta / aún-no-precisa), los hechos por niveles (establecido solo
+con dos fuentes leídas a fondo), los callejones documentados con su porqué, y
+lo que los expertos dicen que falta. Un auditor adversarial busca lo que se
+quedó fuera, y la fase termina cuando las rondas dejan de aportar — medido,
+no sentido. Solo entonces se imagina: desde el entendimiento, no desde la nada.
+
 ## Qué pasa, paso a paso, en una misión
 
 1. **Las afirmaciones no las inventa el humano — las propone la máquina.**

@@ -90,23 +90,46 @@ una vez con el terminal: `python3 scripts/map_tool.py export-obsidian`
 reabra `map/Map.canvas`.
 *Esperado:* un GOAL en morado y un pacto escrito de qué es éxito.
 
-**M7 — La bibliografía primero, la descomposición después.**
-Paso 1 — *campaña bibliográfica* (tú tienes web; los workers no): rastrea la
-literatura del objetivo — programas conocidos, callejones documentados y su
-porqué, resultados parciales, surveys. Verifica que cada enlace carga y añade
-cada hallazgo con `adversal_bib_add` (los callejones, con su `why_dead`).
-Objetivo mínimo: 8–15 entradas revisadas por el usuario (están enlazadas en su
-Obsidian — que haga clic en un par para fiarse del método, no de ti).
-Paso 2 — `adversal_decompose` sobre `GOAL` (n 5). Detectará el digest solo y
-obligará a cada pieza a declarar su programa conocido más cercano y su apuesta
-diferencial. Presenta la propuesta completa al usuario con tu lectura crítica
-(¿cuáles son atacables en días, no meses? ¿cuáles confiesan adyacencia a un
-callejón documentado?). Importa SOLO lo que el usuario acepte:
-`adversal_map_import` con `only`.
-*Esperado:* una bibliografía inicial con dientes y 3–5 nodos grises nuevos,
-cada uno con su adyacencia declarada. Es un plan, no un resultado — dilo así.
+**M7 — La fase de comprensión (el expediente). Multi-sesión; la más cara del
+proyecto, a propósito: tiempo en la base.**
+Trabaja en rondas hasta saturación medible:
+1. *Intake*: pide al usuario las transcripciones de chats previos relevantes y
+   pásalas por `adversal_dossier_intake`; añade al expediente SOLO las
+   preguntas que el usuario acepte (`adversal_dossier_question`).
+2. *Bibliografía*: rastrea la literatura con tu web (los workers no navegan) —
+   programas conocidos, callejones con su porqué, parciales, surveys.
+   `adversal_bib_add` cada hallazgo con enlace verificado.
+3. *Fuentes canónicas*: para todo lo que vaya a sostener algo, trae el texto,
+   conviértelo a Markdown y guárdalo con `adversal_bib_attach` (queda anclado
+   por hash).
+4. *Lecturas*: `adversal_read_paper` nivel `deep` sobre esas fuentes (readers 2
+   en las piedras angulares). Toda cita se verifica contra el texto; una cita
+   inventada rechaza la lectura entera.
+5. *Expediente*: clasifica preguntas (`adversal_dossier_classify` — respondida
+   exige 2 fuentes leídas a fondo; el script se niega a menos), añade hechos
+   por niveles (`adversal_dossier_fact`), y declara el vacío de las secciones
+   sin contenido (`adversal_dossier_note`). Las 10 secciones del patrón, todas.
+6. *Auditoría adversarial*: `adversal_dossier_audit` — un worker aislado busca
+   preguntas ausentes, afirmaciones flojas y secciones flacas. Sus hallazgos
+   marcan la ronda siguiente. Cierra cada ronda con `adversal_dossier_round`
+   (cuántas novedades produjo).
+*Criterio de salida (todos):* 10 secciones trabajadas o con vacío declarado;
+todo lo que sostiene el expediente en nivel `leído a fondo`; `saturated_hint`
+verdadero en `adversal_dossier_status`; y el usuario lee el dossier.md en su
+Obsidian y aprueba. Hasta entonces, NO se pasa a imaginar.
+*Esperado:* una wiki súper documentada de verdad — preguntas del investigador
+clasificadas con fuentes, cementerio señalizado, y los cruxes a la vista.
 
-**M8 — Objetivos formales para las hojas.**
+**M8 — La primera descomposición, desde el entendimiento.**
+`adversal_decompose` sobre `GOAL` (n 5). Se apoya solo en ambos digests
+(bibliografía + expediente) y obliga a cada pieza a declarar su programa
+conocido más cercano y su apuesta diferencial. Presenta la propuesta al
+usuario con tu lectura crítica (¿atacable en días? ¿adyacente a un callejón
+documentado?). Importa SOLO lo aceptado: `adversal_map_import` con `only`.
+*Esperado:* 3–5 nodos grises con su adyacencia declarada. Un plan, no un
+resultado — dilo así.
+
+**M9 — Objetivos formales para las hojas.**
 Para cada nodo hoja aceptado: misión de formalización de ENUNCIADO (no de
 prueba): pide al formalizer solo el `formal_statement` candidato, fíjalo con
 `adversal_map_set`, pasa `adversal_backtranslate`, y el usuario confirma la
@@ -114,17 +137,13 @@ fidelidad. Un nodo sin objetivo formal confirmado no puede dar verde jamás.
 *Esperado:* 2–3 hojas con diana formal confirmada; alguna hoja resultará "no
 expresable con mathlib hoy" — se anota en el nodo y ES un resultado.
 
-**M9 — Primera misión real.**
-`adversal_map_next` y lanza `adversal_mission` sobre la primera hoja con diana
-formal (worker_timeout 900).
-*Esperado:* lo más probable, `not_established` con obstrucciones concretas
-nombradas. Si sale verde, backtranslate antes de contarlo.
-
-**M10 — Trocear lo que no cede.**
-Si M9 no estableció nada: `adversal_decompose` sobre ESE nodo (no sobre GOAL),
-importa lo aceptado, y repite misión sobre la sub-hoja más pequeña.
-*Esperado:* aprender el ritmo real del sistema: cuando un nodo no cede, se
-trocea; no se empuja más fuerte.
+**M10 — Primera misión real, y trocear lo que no cede.**
+`adversal_map_next` y `adversal_mission` sobre la primera hoja con diana formal
+(worker_timeout 900). Si no establece nada: `adversal_decompose` sobre ESE nodo
+(no sobre GOAL), importa lo aceptado, y repite sobre la sub-hoja más pequeña.
+*Esperado:* lo más probable, `not_established` con obstrucciones concretas — y
+la lección del ritmo: cuando un nodo no cede, se trocea; no se empuja más
+fuerte. Si sale verde, backtranslate antes de contarlo.
 
 ---
 

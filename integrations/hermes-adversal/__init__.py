@@ -40,7 +40,7 @@ PROTECTED_PATTERNS = (
 SANCTIONED_SCRIPTS = (
     "run_mission.py", "verdict_engine.py", "map_tool.py", "decompose.py",
     "backtranslate.py", "reverify.py", "ideate.py", "bootstrap_adversal.py",
-    "adversal_doctor.py", "bibliography.py",
+    "adversal_doctor.py", "bibliography.py", "read_paper.py", "dossier.py",
 )
 WRITE_HINTS = (">", ">>", "tee ", "rm ", "mv ", "cp ", "sed -i", "truncate",
                "unlink", "shutil", "write_text", "mkdir")
@@ -425,6 +425,165 @@ def register(ctx) -> None:  # pragma: no cover - thin wiring, pieces unit-tested
          "Regenerate the prior-art digest and index from the bibliography. "
          "ideate/decompose auto-detect the digest and ground on it.",
          {"project": S}, [], h_bib_digest)
+
+    def h_bib_attach(params, **_):
+        project, err = _project_or_error(params)
+        if err:
+            return err
+        return _run("bibliography.py",
+                    ["attach-source", "--project", str(project),
+                     "--link", params["link"], "--file", params["file"]],
+                    project, 120)
+
+    tool("adversal_bib_attach",
+         "Store the canonical Markdown copy of a source in the wiki (hash-"
+         "pinned). YOU fetch and convert with your web tools first; readers "
+         "only ever read this stored file.",
+         {"link": S, "file": {**S, "description": "path to the converted .md"},
+          "project": S}, ["link", "file"], h_bib_attach)
+
+    # -- the reader (quote-anchored, machine-validated) --
+    def h_read_paper(params, **_):
+        project, err = _project_or_error(params)
+        if err:
+            return err
+        args = ["--project", str(project), "--link", params["link"]]
+        _opt(args, "--level", params.get("level"))
+        _opt(args, "--readers", params.get("readers"))
+        _opt(args, "--timeout", params.get("worker_timeout"))
+        return _run("read_paper.py", args, project, timeout=3600)
+
+    tool("adversal_read_paper",
+         "Read a canonical source (attach it first): isolated reader(s), every "
+         "extracted claim anchored to a verbatim quote that is string-matched "
+         "against the stored text — one bad quote rejects the whole reading. "
+         "level=deep enables the entry to support dossier claims; readers=2 "
+         "for keystone papers.",
+         {"link": S, "level": {**S, "description": "deep | skim"},
+          "readers": N, "worker_timeout": N, "project": S},
+         ["link"], h_read_paper)
+
+    # -- the dossier (structured comprehension) --
+    def h_dossier_question(params, **_):
+        project, err = _project_or_error(params)
+        if err:
+            return err
+        return _run("dossier.py", ["question", "--project", str(project),
+                                   "--text", params["text"],
+                                   "--section", params["section"]], project, 60)
+
+    tool("adversal_dossier_question",
+         "Add a researcher question to the dossier (starts `abierta`). Sections: "
+         "objeto, enunciado, historia, evidencia, vecindario, obstrucciones, "
+         "herramientas, cruxes, actividad, formalizacion.",
+         {"text": S, "section": S, "project": S}, ["text", "section"],
+         h_dossier_question)
+
+    def h_dossier_classify(params, **_):
+        project, err = _project_or_error(params)
+        if err:
+            return err
+        args = ["classify", "--project", str(project), "--id", params["id"],
+                "--status", params["status"]]
+        _opt(args, "--answer", params.get("answer"))
+        _opt(args, "--sources", params.get("sources"))
+        return _run("dossier.py", args, project, 60)
+
+    tool("adversal_dossier_classify",
+         "Classify a dossier question. `respondida` REQUIRES >=2 deep-read "
+         "sources (the script refuses less); `parcial` >=1 read source; "
+         "`pre-precisa` = not yet a mathematical question.",
+         {"id": S, "status": {**S, "description": "abierta | pre-precisa | "
+                                                  "parcial | respondida"},
+          "answer": S, "sources": {**S, "description": "comma-separated links"},
+          "project": S}, ["id", "status"], h_dossier_classify)
+
+    def h_dossier_fact(params, **_):
+        project, err = _project_or_error(params)
+        if err:
+            return err
+        args = ["fact", "--project", str(project), "--text", params["text"],
+                "--tier", params["tier"], "--section", params["section"]]
+        _opt(args, "--sources", params.get("sources"))
+        return _run("dossier.py", args, project, 60)
+
+    tool("adversal_dossier_fact",
+         "Add a tiered fact. `establecido` REQUIRES >=2 deep-read sources; "
+         "`heuristica` >=1 read source; `especulacion` is labeled as such.",
+         {"text": S, "tier": {**S, "description": "establecido | heuristica | "
+                                                  "especulacion"},
+          "section": S, "sources": S, "project": S},
+         ["text", "tier", "section"], h_dossier_fact)
+
+    def h_dossier_note(params, **_):
+        project, err = _project_or_error(params)
+        if err:
+            return err
+        return _run("dossier.py", ["note", "--project", str(project),
+                                   "--section", params["section"],
+                                   "--note", params["note"]], project, 60)
+
+    tool("adversal_dossier_note",
+         "Declare a section's state explicitly (including its emptiness and "
+         "why). Silent sections are forbidden.",
+         {"section": S, "note": S, "project": S}, ["section", "note"],
+         h_dossier_note)
+
+    def h_dossier_round(params, **_):
+        project, err = _project_or_error(params)
+        if err:
+            return err
+        args = ["round", "--project", str(project),
+                "--new-items", str(params["new_items"])]
+        _opt(args, "--notes", params.get("notes"))
+        return _run("dossier.py", args, project, 60)
+
+    tool("adversal_dossier_round",
+         "Log an investigation round with how many NEW important items it "
+         "produced. Saturation is measured: two near-empty rounds = the base "
+         "is done.",
+         {"new_items": N, "notes": S, "project": S}, ["new_items"],
+         h_dossier_round)
+
+    def h_dossier_audit(params, **_):
+        project, err = _project_or_error(params)
+        if err:
+            return err
+        args = ["audit", "--project", str(project)]
+        _opt(args, "--timeout", params.get("worker_timeout"))
+        return _run("dossier.py", args, project, timeout=1200)
+
+    tool("adversal_dossier_audit",
+         "Adversarial hole-hunt: an isolated worker lists missing questions, "
+         "weak claims, and thin sections. Findings feed the next round; they "
+         "are objections, never verdicts.",
+         {"worker_timeout": N, "project": S}, [], h_dossier_audit)
+
+    def h_dossier_intake(params, **_):
+        project, err = _project_or_error(params)
+        if err:
+            return err
+        args = ["intake", "--project", str(project), "--file", params["file"]]
+        _opt(args, "--timeout", params.get("worker_timeout"))
+        return _run("dossier.py", args, project, timeout=1200)
+
+    tool("adversal_dossier_intake",
+         "Mine a chat transcript into dossier proposals (questions, claims, "
+         "references to chase). Add ONLY what the user accepts.",
+         {"file": S, "worker_timeout": N, "project": S}, ["file"],
+         h_dossier_intake)
+
+    def h_dossier_status(params, **_):
+        project, err = _project_or_error(params)
+        if err:
+            return err
+        return _run("dossier.py", ["status", "--project", str(project)],
+                    project, 60)
+
+    tool("adversal_dossier_status",
+         "Machine-readable dossier state: unworked sections, question/fact "
+         "counts, rounds, staleness warnings, saturation hint.",
+         {"project": S}, [], h_dossier_status)
 
     # -- hooks --
     def guard(*args, **kwargs):

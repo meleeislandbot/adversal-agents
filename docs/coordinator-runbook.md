@@ -110,6 +110,28 @@ graph view works too (suggested color groups: `tag:#map/proven` green,
 `tag:#map/refuted` red). Without Obsidian, `.adversal/map/map.md` carries the
 same information as text.
 
+## The comprehension phase: the dossier, before any divergence
+
+Before imagining routes, the problem itself gets understood — in a phase with
+teeth, not vibes. The dossier (`scripts/dossier.py`, in `llm-wiki/dossier/`)
+enforces the ten-section pattern of what must always be mapped (object, exact
+statement and equivalents, history, evidence both ways, solved/open neighbors,
+known obstructions, toolbox, expert cruxes, activity, formalization state),
+with hard rules the script refuses to bend: `respondida`/`establecido` require
+**two deep-read, current sources**; empty sections must declare their
+emptiness; chat transcripts enter only as mined proposals (`intake`).
+
+Depth is engineered, not requested: papers live as hash-pinned canonical
+Markdown in the wiki (`bibliography.py attach-source`), readers
+(`read_paper.py`) must anchor every extracted claim to a verbatim quote that
+is string-matched against the stored text — one bad quote rejects the whole
+reading — and keystone papers get two independent readers. An adversarial
+audit (`dossier.py audit`) hunts for missing questions and thin sections each
+round, and saturation is measured (`round`): two near-empty rounds in a row
+mean the base is done. Exit criteria before ideation: all sections worked or
+declared, all supporting sources deep-read, saturation reached, and the
+researcher signs off on `dossier.md`.
+
 ## The bibliography: everyone else's map, before imagining your own
 
 Divergent generation has two blind spots: model memory re-derives the canon
